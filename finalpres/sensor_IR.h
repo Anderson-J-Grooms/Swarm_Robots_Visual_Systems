@@ -12,5 +12,3 @@ double generate_data(double distance);
 double* generate_data_set(double distance, int numberSample);
 void printArr(double arr[], int size);
 
-
-#endif /* SENSOR_IR_H */

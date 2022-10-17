@@ -1,0 +1,139 @@
+Metadata-Version: 1.2
+Name: rcpy
+Version: 0.5.1
+Summary: Python Library for Robotics Cape on Beaglebone Black and Beaglebone Blue
+Home-page: https://github.com/mcdeoliveira/rcpy
+Author: Mauricio C. de Oliveira
+Author-email: mauricio@ucsd.edu
+License: MIT
+Download-URL: https://github.com/mcdeoliveira/rcpy/archive/0.5.tar.gz
+Description: rcpy: Python 3 Interface for the Robotics Cape on the Beaglebone Black and the Beaglebone Blue
+        ==============================================================================================
+        
+        **Release 0.5**
+        
+        This is a Python library with bindings for some of the functionality of
+        the `Robotics Cape
+        library <https://github.com/StrawsonDesign/Robotics_Cape_Installer>`__.
+        
+        We only support Python 3, and are not interested in Python 2 at all.
+        
+        Not all functions are supported. Currently supported functions are:
+        
+        1. MPU9250
+        2. PWM motors
+        3. Servos and ESCs
+        4. Encoders
+        5. LEDs
+        6. Buttons
+        7. GPIO inputs
+        8. ADCs
+        
+        You might also be interested in the ``pyctrl`` package
+        (`github <https://github.com/mcdeoliveira/pyctrl>`__,
+        `PyPI <https://pypi.python.org/pypi?:action=display&name=pyctrl>`__).
+        
+        Preliminaries
+        -------------
+        
+        You will need the `Robotics Cape
+        library <https://github.com/StrawsonDesign/Robotics_Cape_Installer>`__
+        version 0.3.4 or higher. Depending on the image you have on your
+        Beaglebone Black or Blue it might already be installed! You can check if
+        it is installed and the current version by running
+        
+        ::
+        
+            rc_version
+        
+        on your Beaglebone. If the command ``rc_version`` is not found type
+        
+        ::
+        
+            sudo apt-get update
+            sudo apt-get install roboticscape
+        
+        to install or
+        
+        ::
+        
+            sudo apt-get update
+            sudo apt-get upgrade roboticscape
+        
+        to upgrade from an older version. For more details see these
+        `instructions <http://strawsondesign.com/#!manual-install>`__.
+        
+        You must also have python3 installed. If you have not installed python3
+        yet type
+        
+        ::
+        
+            sudo apt install python3 python3-pip
+        
+        to install python3 and pip3.
+        
+        Installation
+        ------------
+        
+        Starting with version 0.5, `rcpy` relies on `libgpiod
+        <https://github.com/brgl/libgpiod>`__ for its gpio access. As of now,
+        you have to manually install this library as follows.
+        
+        Install some dependencies used by autoconf
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        ::
+        
+            sudo apt install autoconf-archive
+        
+        Clone repo, build and make
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        ::
+           
+            git clone https://github.com/brgl/libgpiod
+            cd libgpiod
+            ./autogen.sh --enable-tools=yes --enable-bindings-python --prefix=/usr/local
+            make
+            sudo make install
+        
+        Move packages to /usr/local/lib/python3.5/dist-packages
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        ::
+           
+            sudo mv /usr/local/lib/python3.5/site-packages/* /usr/local/lib/python3.5/dist-packages/.
+        
+        Install from PyPI
+        ^^^^^^^^^^^^^^^^^
+        
+        Starting with version 0.3, ``rcpy`` is available from
+        `PyPI <https://pypi.python.org/pypi?:action=display&name=rcpy>`__. Just
+        type
+        
+        ::
+        
+            sudo pip3 install rcpy
+        
+        to download and complete installation.
+        
+        Documentation:
+        --------------
+        
+        -  `HTML <http://guitar.ucsd.edu/rcpy/html/index.html>`__
+        
+        -  `PDF <http://guitar.ucsd.edu/rcpy/rcpy.pdf>`__
+        
+        Author:
+        -------
+        
+        `Mauricio C. de Oliveira <http://control.ucsd.edu/mauricio>`__
+        
+Keywords: Robotics Cape,Beaglebone Black,Beaglebone Blue
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Other Audience
+Classifier: Topic :: Scientific/Engineering
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.4
+Requires-Python: >=3.4

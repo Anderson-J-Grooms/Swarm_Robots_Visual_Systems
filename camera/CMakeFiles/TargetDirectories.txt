@@ -1,0 +1,3 @@
+/home/debian/camera/CMakeFiles/rebuild_cache.dir
+/home/debian/camera/CMakeFiles/bonecv.dir
+/home/debian/camera/CMakeFiles/edit_cache.dir

@@ -1,0 +1,6 @@
+rcpy/_adc.cpython-37m-arm-linux-gnueabihf.so
+rcpy/_encoder.cpython-37m-arm-linux-gnueabihf.so
+rcpy/_motor.cpython-37m-arm-linux-gnueabihf.so
+rcpy/_mpu9250.cpython-37m-arm-linux-gnueabihf.so
+rcpy/_rcpy.cpython-37m-arm-linux-gnueabihf.so
+rcpy/_servo.cpython-37m-arm-linux-gnueabihf.so

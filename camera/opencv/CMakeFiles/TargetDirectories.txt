@@ -1,0 +1,3 @@
+/home/debian/camera/opencv/CMakeFiles/rebuild_cache.dir
+/home/debian/camera/opencv/CMakeFiles/opencv_demo.dir
+/home/debian/camera/opencv/CMakeFiles/edit_cache.dir

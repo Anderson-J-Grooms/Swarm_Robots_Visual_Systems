@@ -1,0 +1,5 @@
+Adafruit_BBIO/ADC.cpython-37m-arm-linux-gnueabihf.so
+Adafruit_BBIO/GPIO.cpython-37m-arm-linux-gnueabihf.so
+Adafruit_BBIO/PWM.cpython-37m-arm-linux-gnueabihf.so
+Adafruit_BBIO/SPI.cpython-37m-arm-linux-gnueabihf.so
+Adafruit_BBIO/UART.cpython-37m-arm-linux-gnueabihf.so

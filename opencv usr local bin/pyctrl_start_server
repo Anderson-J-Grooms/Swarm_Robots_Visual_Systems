@@ -1,0 +1,4 @@
+#!/usr/bin/python3
+# EASY-INSTALL-SCRIPT: 'pyctrl==0.4.3','pyctrl_start_server'
+__requires__ = 'pyctrl==0.4.3'
+__import__('pkg_resources').run_script('pyctrl==0.4.3', 'pyctrl_start_server')
