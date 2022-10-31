@@ -19,7 +19,7 @@ message(STATUS "    libraries: ${OpenCV_LIBS}")
 message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
 # Declare the executable target built from your sources
-add_executable(bonecv bonecv.cpp)
+add_executable(square_detect square_detect.cpp)
 
 # Link your application with OpenCV libraries
-target_link_libraries(bonecv PRIVATE ${OpenCV_LIBS})
+target_link_libraries(square_detect PRIVATE ${OpenCV_LIBS})
