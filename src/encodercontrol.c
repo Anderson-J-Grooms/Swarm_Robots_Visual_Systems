@@ -15,9 +15,15 @@
  * @param leftSpeedOut Speed of the Left motor after error correction
  * @param rightSpeedOut Speed of the Left motor after error correction
  */
-void controlAlgorithm(const int16_t p, const int16_t i, const int16_t d, const int leftSpeedIn, const int rightSpeedIn, int *leftSpeedOut, int *rightSpeedOut) 
+void controlAlgorithm(int error, const int16_t p, const int16_t i, const int16_t d, const int leftSpeedIn, const int rightSpeedIn, int *leftSpeedOut, int *rightSpeedOut) 
 {
 
+}
+
+
+enum state {
+    LOW,
+    HIGH
 }
 
 /**
@@ -30,19 +36,29 @@ void controlAlgorithm(const int16_t p, const int16_t i, const int16_t d, const i
  * 
  * @param rightWheelCount pointer to the count of the right encoder changes
  */
-void readADC(int *leftWheelCount, int *rightWheelCount)
+void readADC(int *leftWheelCount, int *rightWheelCount, state *leftState, state *rightState)
 {
+    // Move to global scopett
     // Analog input pins
     int AIN0 = 3;
     int AIN1 = 4;
+    // Threshold reading from BeagleBone
+    long threshold = 750; // Need testing
 
     // Read values from ADC
-    long leftReading = rc_adc_read_raw(AIN0);
-    long rightReading = rc_adc_read_raw(AIN1);
+    state leftReading = [](){return rc_adc_read_raw(AIN0) >= threshold;};
+    state rightReading = [](){return rc_adc_read_raw(AIN1) >= threshold;};
 
-    // Normalize ADC reading
-
-    // Compare to previous values based on a threshold
-
+    // Compare to previous values
     // if the new values read from the adc are on the opposite side of the threshold increment the count for that wheel
+    if (leftReading != leftState)
+    {
+        leftWheelCount++;
+        leftState = &leftReading;
+    }
+    if (rightReading != rightState)
+    {
+        rightWheelCount++;
+        rightState = &rightReading;
+    }
 }
