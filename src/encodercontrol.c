@@ -21,7 +21,8 @@ void controlAlgorithm(int error, const int16_t p, const int16_t i, const int16_t
 }
 
 
-enum state {
+enum state 
+{
     LOW,
     HIGH
 }
@@ -36,29 +37,42 @@ enum state {
  * 
  * @param rightWheelCount pointer to the count of the right encoder changes
  */
-void readADC(int *leftWheelCount, int *rightWheelCount, state *leftState, state *rightState)
+void readADC(int *leftWheelCount, int *rightWheelCount, enum state *leftState, enum state *rightState)
 {
-    // Move to global scopett
+    // Move to global scope
     // Analog input pins
     int AIN0 = 3;
     int AIN1 = 4;
     // Threshold reading from BeagleBone
-    long threshold = 750; // Need testing
+    long threshold = 3500; // ***Needs Testing***
 
     // Read values from ADC
-    state leftReading = [](){return rc_adc_read_raw(AIN0) >= threshold;};
-    state rightReading = [](){return rc_adc_read_raw(AIN1) >= threshold;};
+    enum state leftReading = (rc_adc_read_raw(AIN0) >= threshold) ? HIGH : LOW;
+    enum state rightReading = (rc_adc_read_raw(AIN1) >= threshold) ? HIGH : LOW;
 
     // Compare to previous values
     // if the new values read from the adc are on the opposite side of the threshold increment the count for that wheel
-    if (leftReading != leftState)
+    if (leftReading != &leftState)
     {
         leftWheelCount++;
         leftState = &leftReading;
     }
-    if (rightReading != rightState)
+    if (rightReading != &rightState)
     {
         rightWheelCount++;
         rightState = &rightReading;
+    }
+}
+
+int main(int argc, char *argv[]) 
+{
+    int time = (argc > 1) ? argv[1] : 100;
+    enum state leftState = LOW, rightState = LOW;
+    int leftWheelCount = 0, rightWheelCount = 0;
+    while(time > 0)
+    {
+        readADC(&leftWheelCount, &rightWheelCount, &leftState, &rightState);
+        std::cout << "Left Wheel Count:  " << leftWheelCount << "\nRight Wheel Count:  " << rightWheelCount << std::endl;
+        time--;
     }
 }
