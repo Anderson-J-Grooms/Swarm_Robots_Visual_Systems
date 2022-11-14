@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <rc_usefulincludes.h>
 #include <roboticscape.h>
-
+#include <rc/adc.h>
+#include <rc/time.h>
 /**
  * @brief A control algorithm implementing a PID controller. The functions takes in the constants for the PID variables and 
  * pointers to the final speeds after error correction.
@@ -25,8 +26,7 @@ enum state
 {
     LOW,
     HIGH
-}
-
+};
 /**
  * @brief Read the values from the ADC. This function will need to be called at a "Sampling Rate" by the caller function to ensure
  * the changes from the encoder are accurate.
@@ -66,13 +66,20 @@ void readADC(int *leftWheelCount, int *rightWheelCount, enum state *leftState, e
 
 int main(int argc, char *argv[]) 
 {
-    int time = (argc > 1) ? argv[1] : 100;
+    int time;
+    if (argc > 1) {
+	time = argv[1];
+    }
+    else {
+	time = 100;
+    }
+    //int time = (argc > 1) ? argv[1] : 100;
     enum state leftState = LOW, rightState = LOW;
     int leftWheelCount = 0, rightWheelCount = 0;
     while(time > 0)
     {
         readADC(&leftWheelCount, &rightWheelCount, &leftState, &rightState);
-        std::cout << "Left Wheel Count:  " << leftWheelCount << "\nRight Wheel Count:  " << rightWheelCount << std::endl;
+        printf("Left Wheel Count:  %i \n Right Wheel Count: %i", leftWheelCount, rightWheelCount);
         time--;
     }
 }
