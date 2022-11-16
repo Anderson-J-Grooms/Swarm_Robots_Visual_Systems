@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/bonecv.dir/bonecv.cpp.o"
-  "bonecv.pdb"
   "bonecv"
+  "bonecv.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

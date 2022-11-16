@@ -40,25 +40,22 @@ static double angle( Point pt1, Point pt2, Point pt0 )
 }
 
 // returns sequence of squares detected on the image.
-static void findSquares( const Mat& image, vector<vector<Point> >& squares )
+static void findSquares( const Mat& image, vector<vector<Point>> & squares )
 {
     squares.clear();
 
-    Mat pyr, timg;
-
+    Mat pyr, timg, gray, gray0;
     // down-scale and upscale the image to filter out the noise
-    pyrDown(image, pyr, Size(image.cols/2, image.rows/2));
+   pyrDown(image, pyr, Size(image.cols/2, image.rows/2));
     pyrUp(pyr, timg, image.size());
     vector<vector<Point> > contours;
-
-     lower=np.array([0, 0, 0],np.uint8)
-    upper=np.array([180, 250, 50],np.uint8)
-    mask = inRange(image, lower, upper)
+    cvtColor(image, gray0, COLOR_BGR2HSV);
+    inRange(gray0, Scalar(0,0,0), Scalar(180,255,50), gray);
 
             // find contours and store them all as a list
-            findContours(image, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+            findContours(gray, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
-            vector<Point> approx;
+vector<Point> approx;
 
             // test each contour
             for( size_t i = 0; i < contours.size(); i++ )
@@ -97,8 +94,14 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
 
 int main(int argc, char** argv)
 {
-
+    Mat image;
+    double KNOWN_WIDTH = 3.0 * 25.4;
+    image = imread("capture.png");
+vector<vector<Point>>squares;
+    
+    double focalLength = 755.916;
     Mat frame;
+    
     //--- INITIALIZE VIDEOCAPTURE
     VideoCapture cap;
     // open the default camera using default API
@@ -126,18 +129,22 @@ int main(int argc, char** argv)
             cerr << "ERROR! blank frame grabbed\n";
             break;
         }
-        vector<vector<Point> > squares;
         findSquares(frame, squares);
-
+        
+	RotatedRect rect = minAreaRect(squares[0]);
+	double distance = (KNOWN_WIDTH * focalLength) / rect.size.width;
+	cout << "Pixel Width " << rect.size.width << endl;
+	cout << "Distance (in) :" << (distance * 0.0394)  << endl;
         polylines(frame, squares, true, Scalar(0, 255, 0), 3, LINE_AA);
         // show live and wait for a key with timeout long enough to show images
         imshow("Live", frame);
         if (waitKey(5) >= 0)
             break;
+        imwrite("result.png", frame);
     }
+    
     // the camera will be deinitialized automatically in VideoCapture destructor
     return 0;
-
 
         
 

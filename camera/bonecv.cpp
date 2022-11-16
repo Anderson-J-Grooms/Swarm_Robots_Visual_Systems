@@ -7,8 +7,8 @@ int main()
 VideoCapture capture(0); // capturing from /dev/video0
 cout << "Started Processing - Capturing Image" << endl;
 // set any properties in the VideoCapture object
-capture.set(CAP_PROP_FRAME_WIDTH , 352);
-capture.set(CAP_PROP_FRAME_HEIGHT , 288);
+capture.set(CAP_PROP_FRAME_WIDTH , 320);
+capture.set(CAP_PROP_FRAME_HEIGHT , 176);
 capture.set(CAP_PROP_GAIN, 0); // enable auto gain
 if(!capture.isOpened()){ // connect to the camera
 cout << "Failed to connect to the camera." << endl;
