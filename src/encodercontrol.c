@@ -8,6 +8,8 @@
  * @brief A control algorithm implementing a PID controller. The functions takes in the constants for the PID variables and 
  * pointers to the final speeds after error correction.
  * 
+ * @param error Integer value representing the difference in the motor wheels. If error is positive then the left wheel is 
+ * moving faster than the right wheel. The opposite is true if the error is negative.
  * @param p Proportional value
  * @param i Intergal value
  * @param d differential value
@@ -16,9 +18,13 @@
  * @param leftSpeedOut Speed of the Left motor after error correction
  * @param rightSpeedOut Speed of the Left motor after error correction
  */
-void controlAlgorithm(int error, const int16_t p, const int16_t i, const int16_t d, const int leftSpeedIn, const int rightSpeedIn, int *leftSpeedOut, int *rightSpeedOut) 
+void controlAlgorithm(const int *error, const int16_t p, const int16_t i, const int16_t d, const float *leftSpeedIn, const float *rightSpeedIn, int *leftSpeedOut, int *rightSpeedOut) 
 {
-
+    // Very Simple Control
+    // This assumes that the max (p*error) will be 75. New range [1.5,0]
+    float p_delta = (p * &error) / 50;
+    leftSpeedOut -= (&leftSpeedIn > 0.0 && &leftSpeedIn <= 1.5f) ? p_delta : 0;
+    rightSpeedOut +=  (&rightSpeedIn > 0.0 && &rightSpeedIn <= 1.5f) ? p_delta : 0;
 }
 
 
