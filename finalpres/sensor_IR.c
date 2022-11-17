@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /*
 Copyright (c) 2022 Peter Jamieson (jamieson.peter@gmail.com)
 and Bryan Van Scoy
