@@ -23,14 +23,14 @@ struct wheel_control
 
     enum state current_state;       // Current State of Optical Sensor [High, LOW]
 
-    float p, i, d;                  // PID values for the controller
+    double p, i, d;                  // PID values for the controller
 
-    float i_error;                  // Incremental error for creating the integral of the error curve
+    double i_error;                  // Incremental error for creating the integral of the error curve
 
-    float prev_error;               // Previous error to get instantaneous change for derivative error;
+    double prev_error;               // Previous error to get instantaneous change for derivative error;
 
-    float m_speed;                  // Measured Speed. Gets updated by get_speed().
-    float i_speed;                  // Ideal Speed. Gets set by set_speed().
+    double m_speed;                  // Measured Speed. Gets updated by get_speed().
+    double i_speed;                  // Ideal Speed. Gets set by g.
 
     double motor_setting;           // Setting the PWM for the motor. Gets set by the PID controller.
 
@@ -44,7 +44,7 @@ struct wheel_control
  * 
  * @returns The frequency to be sent to the motor
  */
-double convert_speed(float speed)
+double convert_speed(double speed)
 {
     const double max_speed = 3.0; // Max speed is unknown.
 
@@ -62,14 +62,32 @@ double convert_speed(float speed)
 void pid_control(struct wheel_control *wheel) 
 {
     // PID control
-    float proportional = wheel->p * wheel->error;
-    float intregral = wheel->i * wheel->i_error;
-    float derivative = wheel->d * ((wheel->error - wheel->prev_error) / ((wheel->time_1 - wheel->time_0) / CLOCKS_PER_SEC));
+    double proportional = wheel->p * wheel->error;
+    double intregral = wheel->i * wheel->i_error;
+    double derivative = wheel->d * ((wheel->error - wheel->prev_error) / ((wheel->time_1 - wheel->time_0) / CLOCKS_PER_SEC));
 
     wheel->motor_setting += convert_speed(proportional + intregral + derivative);
 
     // set motor to new speed
+    printf("Wheel Motor current setting %f\n", wheel->motor_setting);
     rc_servo_send_pulse_normalized(wheel->pin, wheel->motor_setting);
+}
+
+void get_speed(struct wheel_control *wheel)
+{
+    const double distance = 1.5; // 1.5 cm is how far the wheel travels
+
+    double delta_clock = wheel->time_1 - wheel->time_0;
+    double seconds = delta_clock / CLOCKS_PER_SEC;
+
+    wheel->m_speed = distance / seconds;  // Unit of speed is cm/s 
+}
+
+void get_error(struct wheel_control *wheel)
+{
+    wheel->prev_error = wheel->error;
+    wheel->i_error += wheel->error * (wheel->time_1 - wheel->time_0) / CLOCKS_PER_SEC;
+    wheel->error = wheel->i_speed - wheel->m_speed; // Error is equal to the difference between the ideal and measured speeds
 }
 
 /**
@@ -105,8 +123,8 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
 
         left_wheel->current_state = leftReading;
 
-        get_speed(&left_wheel); // Calculates speed
-        get_error(&left_wheel); // updates error
+        get_speed(left_wheel); // Calculates speed
+        get_error(left_wheel); // updates error
 
         change = true;
     }
@@ -117,8 +135,8 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
 
         right_wheel->current_state = rightReading;
 
-        get_speed(&right_wheel);
-        get_error(&right_wheel);
+        get_speed(right_wheel);
+        get_error(right_wheel);
 
         change = true;
     }
@@ -133,9 +151,9 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     left_wheel->i = 0.4;
     left_wheel->d = 0.2;
 
-    right_wheel->p = 1.0;
-    right_wheel->i = 0.6;
-    right_wheel->d = 0.2;
+    left_wheel->p = 1.0;
+    left_wheel->i = 0.6;
+    left_wheel->d = 0.2;
 
     left_wheel->threshold = 2200;
     right_wheel->threshold = 2200;
@@ -144,27 +162,7 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     right_wheel->pin = 8;
 }
 
-void get_speed(struct wheel_control *wheel)
-{
-    const float distance = 1.5; // 1.5 cm is how far the wheel travels
-
-    double delta_clock = wheel->time_1 - wheel->time_0;
-    double seconds = delta_clock / CLOCKS_PER_SEC;
-
-    wheel->m_speed = distance / seconds;  // Unit of speed is cm/s 
-}
-
-void get_error(struct wheel_control *wheel)
-{
-    if(wheel->error != NULL)
-    {
-        wheel->prev_error = wheel->error;
-        wheel->i_error += wheel->error * (wheel->time_1 - wheel->time_0) / CLOCKS_PER_SEC;
-    }
-    wheel->error = wheel->i_speed - wheel->m_speed; // Error is equal to the difference between the ideal and measured speeds
-}
-
-void set_speed(float speed, struct wheel_control *wheel)
+void set_speed(double speed, struct wheel_control *wheel)
 {
     clock_t time = clock();
     wheel->time_1 = time;
@@ -189,17 +187,17 @@ int main(int argc, char *argv[])
     init_pid(&left_wheel, &right_wheel); // Sets the pid values for each wheel and the time_0 for each wheel;
 
     rc_servo_init();
-    uint64_t t = rc_nanos_since_epoch() + 3000*1000000;
-	while (rc_nanos_since_epoch() < t) {
-        rc_servo_power_rail_en(1);
-        rc_servo_send_pulse_normalized(1, -1);
+    //uint64_t t = rc_nanos_since_epoch() + 3000*1000000;
+	//while (rc_nanos_since_epoch() < t) {
+        //rc_servo_power_rail_en(1);
+        //rc_servo_send_pulse_normalized(1, -1);
         //rc_usleep(100000/30);
-        rc_servo_send_pulse_normalized(8, 1);
-        rc_usleep(2000);
+        //rc_servo_send_pulse_normalized(8, 1);
+        //rc_usleep(2000);
         //rc_usleep(20000/frequency);
-	}
+	//}
     rc_adc_init();
-    int time;
+    long long int time;
     if (argc > 1) {
 	time = atoi(argv[1]);
     }
@@ -220,6 +218,5 @@ int main(int argc, char *argv[])
         }
 	    time--;
     }
-
-    return 0;
 }
+
