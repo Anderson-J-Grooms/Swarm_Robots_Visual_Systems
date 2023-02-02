@@ -42,15 +42,20 @@ struct wheel_control
  * 
  * @param speed The speed we are trying to match to a frequency
  * 
- * @returns The frequency to be sent to the motor
+ * @param pin If we are writing to the left wheel we need to flip the sign
+ * 
+ * @return The frequency to be sent to the motor
  */
-double convert_speed(double speed)
+double convert_speed(double speed, int pin)
 {
     const double max_speed = 3.0; // Max speed is unknown.
 
     const double max_freq = 1.5;
 
-    return ((speed / max_speed) * max_freq);
+    if(pin == 1)
+        speed *= -1;
+
+    return ((speed / max_speed) * max_freq)
 }
 
 /**
@@ -128,6 +133,7 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
 
         change = true;
     }
+
     if (rightReading != right_wheel->current_state)
     {
         right_wheel->time_0 = right_wheel->time_1;
@@ -158,7 +164,7 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     left_wheel->threshold = 2200;
     right_wheel->threshold = 2200;
 
-    left_wheel->pin = 1; // Test these
+    left_wheel->pin = 1;
     right_wheel->pin = 8;
 }
 
@@ -168,7 +174,7 @@ void set_speed(double speed, struct wheel_control *wheel)
     wheel->time_1 = time;
 
     // Get PWM setting from speed
-    double motor_setting = convert_speed(speed);
+    double motor_setting = convert_speed(speed, wheel->pin);
 
     rc_servo_send_pulse_normalized(wheel->pin, motor_setting);
 
@@ -184,31 +190,26 @@ int main(int argc, char *argv[])
     struct wheel_control left_wheel;
     struct wheel_control right_wheel;
 
+    // We need to ensure that the structs have the data for each respective wheel.
     init_pid(&left_wheel, &right_wheel); // Sets the pid values for each wheel and the time_0 for each wheel;
-
     rc_servo_init();
-    //uint64_t t = rc_nanos_since_epoch() + 3000*1000000;
-	//while (rc_nanos_since_epoch() < t) {
-        //rc_servo_power_rail_en(1);
-        //rc_servo_send_pulse_normalized(1, -1);
-        //rc_usleep(100000/30);
-        //rc_servo_send_pulse_normalized(8, 1);
-        //rc_usleep(2000);
-        //rc_usleep(20000/frequency);
-	//}
     rc_adc_init();
-    long long int time;
-    if (argc > 1) {
-	time = atoi(argv[1]);
-    }
-    else {
-	time = 100000000000; // 100,000,000,000 == 100 seconds give or take
-    }
-    //int time = (argc > 1) ? argv[1] : 100;
 
-    // set_speed(2, &left_wheel);
-    // set_speed(2, &right_wheel);
+    long long int time;
+    if (argc > 1) 
+    {
+	    time = atoi(argv[1]);
+    }
+    else 
+    {
+	    time = 100000000000; // 100,000,000,000 == 100 seconds give or take
+    }
+
+    // We need an initial speed to set the motors to and a goal to calculate error from
+    set_speed(2, &left_wheel);
+    set_speed(2, &right_wheel);
     
+    // Poll The adc and wait for a change
     while(time > 0)
     {
         if(read_ADC(&left_wheel, &right_wheel)) // Reads the ADC and updates the state and time of that change
@@ -219,4 +220,17 @@ int main(int argc, char *argv[])
 	    time--;
     }
 }
+
+/**
+ * @brief TODO
+ * 1. The encoders need to be remounted and we have to find their respective thresholds again.
+ * 
+ * 2. The wheels need to be set to full speed and their top speeds recalculated.
+ * 
+ * 3. The Threshold and top speed values need to be set in the convert_speed() and read_ADC() functions.
+ * 
+ * 4. Radius of the wheel needs to be measured and the length of travel calculated. Most likely the problem 
+ *  I was having with the speed is due to the wheel not being a good code wheel and we can make it more uniform. 
+ * 
+ */
 
