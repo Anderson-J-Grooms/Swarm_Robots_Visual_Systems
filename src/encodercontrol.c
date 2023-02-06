@@ -22,7 +22,6 @@ struct wheel_control
     int16_t threshold;
 
     enum state current_state;       // Current State of Optical Sensor [High, LOW]
-    enum state start_state;         // Start state to use for updating the time every other state change
 
     double p, i, d;                 // PID values for the controller
 
@@ -139,30 +138,24 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
     {
         left_wheel->current_state = leftReading;
 
-        if(leftReading == left_wheel->start_state)
-        {
-            left_wheel->time_0 = left_wheel->time_1;
-            left_wheel->time_1 = clock();
+        left_wheel->time_0 = left_wheel->time_1;
+        left_wheel->time_1 = clock();
 
-            get_speed(left_wheel); // Calculates speed
-            get_error(left_wheel); // updates error
-            update = true;
-        }
+        get_speed(left_wheel); // Calculates speed
+        get_error(left_wheel); // updates error
+        update = true;
     }
 
     if (rightReading != right_wheel->current_state)
     {
         right_wheel->current_state = rightReading;
+        
+        right_wheel->time_0 = right_wheel->time_1;
+        right_wheel->time_1 = clock();
 
-        if(rightReading == right_wheel->start_state)
-        {
-            right_wheel->time_0 = right_wheel->time_1;
-            right_wheel->time_1 = clock();
-
-            get_speed(right_wheel); // Calculates speed
-            get_error(right_wheel); // updates error
-            update = true;
-        }
+        get_speed(right_wheel); // Calculates speed
+        get_error(right_wheel); // updates error
+        update = true;
     }
 
     return update;
@@ -200,11 +193,6 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     // Current states of the wheel encoders for initializing the variables
     left_wheel->current_state = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
     right_wheel->current_state = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
-    
-    // Starting state; The wheel states may not be equal distances on the wheel so we add them
-    // together to ensure it is always even.
-    left_wheel->start_state = left_wheel->current_state;
-    right_wheel->start_state = right_wheel->current_state;
 }
 
 /**
