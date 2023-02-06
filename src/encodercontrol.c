@@ -53,10 +53,12 @@ double convert_speed(double speed, int pin)
 
     const double max_freq = 1.5;
 
-    if(pin == 1)
+    // Pin 1 is connected to the right wheel which is facing the oposite direction
+    // so we need to flip the speed so it goes in the correct direction.
+    if(pin == 1) 
         speed *= -1;
 
-    return ((speed / max_speed) * max_freq)
+    return ((speed / max_speed) * max_freq);
 }
 
 /**
@@ -72,7 +74,7 @@ void pid_control(struct wheel_control *wheel)
     double intregral = wheel->i * wheel->i_error;
     double derivative = wheel->d * ((wheel->error - wheel->prev_error) / ((wheel->time_1 - wheel->time_0) / CLOCKS_PER_SEC));
 
-    wheel->motor_setting += convert_speed(proportional + intregral + derivative);
+    wheel->motor_setting += convert_speed(proportional + intregral + derivative, wheel->pin);
 
     // set motor to new speed
     printf("Wheel Motor current setting %f\n", wheel->motor_setting);
@@ -142,8 +144,8 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
             left_wheel->time_0 = left_wheel->time_1;
             left_wheel->time_1 = clock();
 
-            get_speed(&left_wheel); // Calculates speed
-            get_error(&left_wheel); // updates error
+            get_speed(left_wheel); // Calculates speed
+            get_error(left_wheel); // updates error
             update = true;
         }
     }
@@ -157,8 +159,8 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
             right_wheel->time_0 = right_wheel->time_1;
             right_wheel->time_1 = clock();
 
-            get_speed(&right_wheel); // Calculates speed
-            get_error(&right_wheel); // updates error
+            get_speed(right_wheel); // Calculates speed
+            get_error(right_wheel); // updates error
             update = true;
         }
     }
@@ -174,6 +176,10 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
  */
 void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_wheel)
 {
+    // Analog input pins
+    int AIN0 = 3;
+    int AIN1 = 4;
+    
     // These values are not correct nor good attempts at being close
     left_wheel->p = 0.9;
     left_wheel->i = 0.4;
@@ -188,8 +194,8 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     right_wheel->threshold = 2200;
 
     // Pins for writing the PWM setting the motors
-    left_wheel->pin = 1;
-    right_wheel->pin = 8;
+    left_wheel->pin = 8;
+    right_wheel->pin = 1;
 
     // Current states of the wheel encoders for initializing the variables
     left_wheel->current_state = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
@@ -217,7 +223,8 @@ void set_speed(double speed, struct wheel_control *wheel)
     // Get PWM setting from speed
     double motor_setting = convert_speed(speed, wheel->pin);
 
-    rc_servo_send_pulse_normalized(wheel->pin, motor_setting);
+    printf("Pin: %d, Setting: %f\n", wheel->pin, motor_setting);
+    printf("Success: %d\n", rc_servo_send_pulse_normalized(wheel->pin, motor_setting));
 
     wheel->i_speed = speed;
     wheel->m_speed = speed;
@@ -237,7 +244,7 @@ void output_data(struct wheel_control *wheel)
     printf("Measured Speed: %f\n", wheel->m_speed);
     printf("Ideal Speed: %f\n", wheel->i_speed);
     printf("Motor Setting: %f\n", wheel->motor_setting);
-    printf("Timing:\n\ttime[0] = %f, time[1] = %f\n\tdelta_t = %f", wheel->time_0, wheel->time_1, wheel->time_1 - wheel->time_0);
+    printf("Timing:\n\ttime[0] = %ld, time[1] = %ld\n\tdelta_t = %ld", wheel->time_0, wheel->time_1, wheel->time_1 - wheel->time_0);
 
     printf("\n======================\n");
 }
@@ -246,35 +253,45 @@ void output_data(struct wheel_control *wheel)
 
 int main(int argc, char *argv[]) 
 {
+    // Analog input pins
+    int AIN0 = 3;
+    int AIN1 = 4;
+    
     // Create the structs for controlling the motors
     struct wheel_control left_wheel;
     struct wheel_control right_wheel;
 
+    rc_adc_init();
+    rc_servo_init();
+    rc_servo_power_rail_en(1);
+
     // We need to ensure that the structs have the data for each respective wheel.
     init_pid(&left_wheel, &right_wheel); // Sets the pid values for each wheel and the time_0 for each wheel;
-    rc_servo_init();
-    rc_adc_init();
 
     // Set time for the loop to run
-    long long int time;
-    if (argc > 1) 
-    {
-	    time = atoi(argv[1]);
-    }
-    else 
-    {
-	    time = 100000000000; // 100,000,000,000 == 100 seconds give or take
-    }
-
+    //    long long int time;
+    //    if (argc > 1) 
+    //    {
+    //	    time = atoi(argv[1]);
+    //    }
+    //    else 
+    //    {
+    //	    time = 100000000000; // 100,000,000,000 == 100 seconds give or take
+    //    }
+    //
     // We need an initial speed to set the motors to and a goal to calculate error from
-    set_speed(3, &left_wheel);
-    set_speed(3, &right_wheel);
+    for(;;)
+    {	    
+        set_speed(2, &left_wheel);
+        set_speed(2, &right_wheel);
+        rc_usleep(1000000/50);    
+    }
     
     // CONFIGURATION LOOP
-    for(;;)
-    {
+    //for(;;)
+    //{
         // Use to find threshold and ensure encoders are labeled properly in code
-        printf("Left Wheel Reading: %d\nRight Wheel Reading: %d\n", rc_adc_read_raw(AIN0), rc_adc_read_raw(AIN1));
+        // printf("Left Wheel Reading: %d\nRight Wheel Reading: %d\n", rc_adc_read_raw(AIN0), rc_adc_read_raw(AIN1));
 
         // Needs the Threshold set first
         // if(readADC(&left_wheel, &right_wheel))
@@ -282,7 +299,7 @@ int main(int argc, char *argv[])
         //     output_data(&left_wheel);
         //     output_data(&right_wheel);
         // }
-    }
+    //}
 
     // CONTROL LOOP
     // // Poll The adc and wait for a change
@@ -298,6 +315,7 @@ int main(int argc, char *argv[])
     //     output_data(&right_wheel);
 	//     time--;
     // }
+    rc_servo_cleanup();
 }
 
 /**
