@@ -61,6 +61,17 @@ double convert_speed(double speed, int pin)
 }
 
 /**
+ * @brief Set the motor PWM setting
+ * 
+ * @param wheel The wheel to set
+ * @return int Returns 0 on success and 1 if failure
+ */
+int set_motor(struct wheel_control *wheel)
+{
+    return rc_servo_send_pulse_normalized(wheel->pin, wheel->motor_setting);
+}
+
+/**
  * @brief A control algorithm implementing a PID controller. The functions takes in the constants for the PID variables and 
  * pointers to the final speeds after error correction.
  * 
@@ -74,10 +85,6 @@ void pid_control(struct wheel_control *wheel)
     double derivative = wheel->d * ((wheel->error - wheel->prev_error) / ((wheel->time_1 - wheel->time_0) / CLOCKS_PER_SEC));
 
     wheel->motor_setting += convert_speed(proportional + intregral + derivative, wheel->pin);
-
-    // set motor to new speed
-    printf("Wheel Motor current setting %f\n", wheel->motor_setting);
-    rc_servo_send_pulse_normalized(wheel->pin, wheel->motor_setting);
 }
 
 /**
@@ -197,6 +204,7 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
 
 /**
  * @brief Initialize the ideal and measured speed to whatever speed we want for a given wheel.
+ * This method will also start the motor and should be followed by set_motor() to keep it running.
  * 
  * @param speed Speed in cm/s to be converted to a PWM frequency for the motor.
  * @param wheel The wheel for setting the speed.
@@ -249,6 +257,7 @@ int main(int argc, char *argv[])
     struct wheel_control left_wheel;
     struct wheel_control right_wheel;
 
+    // Initialize the ADC and SERVO
     rc_adc_init();
     rc_servo_init();
     rc_servo_power_rail_en(1);
@@ -268,10 +277,12 @@ int main(int argc, char *argv[])
     //    }
     //
     // We need an initial speed to set the motors to and a goal to calculate error from
+    set_speed(2, &left_wheel);
+    set_speed(2, &right_wheel);
     for(;;)
     {	    
-        set_speed(2, &left_wheel);
-        set_speed(2, &right_wheel);
+        set_motor(&left_wheel);
+        set_motor(&right_wheel);
         rc_usleep(1000000/50);    
     }
     
