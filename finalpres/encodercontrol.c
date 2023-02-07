@@ -22,15 +22,16 @@ struct wheel_control
     int16_t threshold;
 
     enum state current_state;       // Current State of Optical Sensor [High, LOW]
+    enum state start_state;         // Start state to use for updating the time every other state change
 
-    double p, i, d;                  // PID values for the controller
+    double p, i, d;                 // PID values for the controller
 
-    double i_error;                  // Incremental error for creating the integral of the error curve
+    double i_error;                 // Incremental error for creating the integral of the error curve
 
-    double prev_error;               // Previous error to get instantaneous change for derivative error;
+    double prev_error;              // Previous error to get instantaneous change for derivative error;
 
-    double m_speed;                  // Measured Speed. Gets updated by get_speed().
-    double i_speed;                  // Ideal Speed. Gets set by g.
+    double m_speed;                 // Measured Speed. Gets updated by get_speed().
+    double i_speed;                 // Ideal Speed. Gets set by g.
 
     double motor_setting;           // Setting the PWM for the motor. Gets set by the PID controller.
 
@@ -78,6 +79,12 @@ void pid_control(struct wheel_control *wheel)
     rc_servo_send_pulse_normalized(wheel->pin, wheel->motor_setting);
 }
 
+/**
+ * @brief Get the speed from the current delta time and the measured distance that it travels.
+ * The distance is contant and based off of two state changes from the wheel encoder.
+ * 
+ * @param wheel The wheel for calculating the speed.
+ */
 void get_speed(struct wheel_control *wheel)
 {
     const double distance = 1.5; // 1.5 cm is how far the wheel travels
@@ -88,6 +95,11 @@ void get_speed(struct wheel_control *wheel)
     wheel->m_speed = distance / seconds;  // Unit of speed is cm/s 
 }
 
+/**
+ * @brief Get the error from the current measured speed and the ideal speed set in set_speed().
+ * 
+ * @param wheel The wheel for calculating the error.
+ */
 void get_error(struct wheel_control *wheel)
 {
     wheel->prev_error = wheel->error;
@@ -105,51 +117,61 @@ void get_error(struct wheel_control *wheel)
  * 
  * @param left_wheel pointer to the struct containing control data.
  * 
- * @return True if there was a change and false if else.
+ * @return True if the speed and error were updated and false if they were not.
  */
 bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_wheel)
 {
-    // Move to global scope
     // Analog input pins
     int AIN0 = 3;
     int AIN1 = 4;
 
-    bool change = false; // Return so we know if there were any changes.
+    bool update = false; // Return so we know if there were any changes.
 
     // Read values from ADC
     enum state leftReading = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
     enum state rightReading = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
     // Compare to previous values
-    // if the new values read from the adc are on the opposite side of the threshold increment the count for that wheel
+    // if the new values read from the adc are on the opposite side of the threshold and we have gone one unit in distance
+    // update the speed and error
     if (leftReading != left_wheel->current_state)
     {
-        left_wheel->time_0 = left_wheel->time_1;
-        left_wheel->time_1 = clock();
-
         left_wheel->current_state = leftReading;
 
-        get_speed(left_wheel); // Calculates speed
-        get_error(left_wheel); // updates error
+        if(leftReading == left_wheel->start_state)
+        {
+            left_wheel->time_0 = left_wheel->time_1;
+            left_wheel->time_1 = clock();
 
-        change = true;
+            get_speed(&left_wheel); // Calculates speed
+            get_error(&left_wheel); // updates error
+            update = true;
+        }
     }
 
     if (rightReading != right_wheel->current_state)
     {
-        right_wheel->time_0 = right_wheel->time_1;
-        right_wheel->time_1 = clock();
-
         right_wheel->current_state = rightReading;
 
-        get_speed(right_wheel);
-        get_error(right_wheel);
+        if(rightReading == right_wheel->start_state)
+        {
+            right_wheel->time_0 = right_wheel->time_1;
+            right_wheel->time_1 = clock();
 
-        change = true;
+            get_speed(&right_wheel); // Calculates speed
+            get_error(&right_wheel); // updates error
+            update = true;
+        }
     }
 
-    return change;
+    return update;
 }
 
+/**
+ * @brief A special function for intializing all the controller values.
+ * 
+ * @param left_wheel Pointer to the control struct for the left wheel.
+ * @param right_wheel Pointer to the control struct for the right wheel.
+ */
 void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_wheel)
 {
     // These values are not correct nor good attempts at being close
@@ -157,20 +179,39 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     left_wheel->i = 0.4;
     left_wheel->d = 0.2;
 
-    left_wheel->p = 1.0;
-    left_wheel->i = 0.6;
-    left_wheel->d = 0.2;
+    right_wheel->p = 1.0;
+    right_wheel->i = 0.6;
+    right_wheel->d = 0.2;
 
+    // This is the value that will determine whether the encoder is sending a high or low signal
     left_wheel->threshold = 2200;
     right_wheel->threshold = 2200;
 
+    // Pins for writing the PWM setting the motors
     left_wheel->pin = 1;
     right_wheel->pin = 8;
+
+    // Current states of the wheel encoders for initializing the variables
+    left_wheel->current_state = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
+    right_wheel->current_state = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
+    
+    // Starting state; The wheel states may not be equal distances on the wheel so we add them
+    // together to ensure it is always even.
+    left_wheel->start_state = left_wheel->current_state;
+    right_wheel->start_state = right_wheel->current_state;
 }
 
+/**
+ * @brief Initialize the ideal and measured speed to whatever speed we want for a given wheel.
+ * 
+ * @param speed Speed in cm/s to be converted to a PWM frequency for the motor.
+ * @param wheel The wheel for setting the speed.
+ */
 void set_speed(double speed, struct wheel_control *wheel)
 {
+    // Since we are starting the motor we need to record this as the current time.
     clock_t time = clock();
+    wheel->time_0 = time; // time_0 should never be accessed before it gets set to the correct value, but we initialize to be safe.
     wheel->time_1 = time;
 
     // Get PWM setting from speed
@@ -183,10 +224,29 @@ void set_speed(double speed, struct wheel_control *wheel)
     wheel->motor_setting = motor_setting;
 }
 
+/**
+ * @brief Function useful for debugging which dumps a few of the useful parameters to standard output.
+ * 
+ * @param wheel Wheel to get information from.
+ */
+void output_data(struct wheel_control *wheel)
+{
+    printf("\n======================\n");
+
+    printf("%s Wheel:\n", (wheel->pin == 1 ? "Left" : "Right"));
+    printf("Measured Speed: %f\n", wheel->m_speed);
+    printf("Ideal Speed: %f\n", wheel->i_speed);
+    printf("Motor Setting: %f\n", wheel->motor_setting);
+    printf("Timing:\n\ttime[0] = %f, time[1] = %f\n\tdelta_t = %f", wheel->time_0, wheel->time_1, wheel->time_1 - wheel->time_0);
+
+    printf("\n======================\n");
+}
+
 
 
 int main(int argc, char *argv[]) 
 {
+    // Create the structs for controlling the motors
     struct wheel_control left_wheel;
     struct wheel_control right_wheel;
 
@@ -195,6 +255,7 @@ int main(int argc, char *argv[])
     rc_servo_init();
     rc_adc_init();
 
+    // Set time for the loop to run
     long long int time;
     if (argc > 1) 
     {
@@ -206,31 +267,53 @@ int main(int argc, char *argv[])
     }
 
     // We need an initial speed to set the motors to and a goal to calculate error from
-    set_speed(2, &left_wheel);
-    set_speed(2, &right_wheel);
+    set_speed(3, &left_wheel);
+    set_speed(3, &right_wheel);
     
-    // Poll The adc and wait for a change
-    while(time > 0)
+    // CONFIGURATION LOOP
+    for(;;)
     {
-        if(read_ADC(&left_wheel, &right_wheel)) // Reads the ADC and updates the state and time of that change
-        {
-            pid_control(&left_wheel); // Update motor PWM setting
-            pid_control(&right_wheel);
-        }
-	    time--;
+        // Use to find threshold and ensure encoders are labeled properly in code
+        printf("Left Wheel Reading: %d\nRight Wheel Reading: %d\n", rc_adc_read_raw(AIN0), rc_adc_read_raw(AIN1));
+
+        // Needs the Threshold set first
+        // if(readADC(&left_wheel, &right_wheel))
+        // {
+        //     output_data(&left_wheel);
+        //     output_data(&right_wheel);
+        // }
     }
+
+    // CONTROL LOOP
+    // // Poll The adc and wait for a change
+    // while(time > 0)
+    // {
+    //     if(read_ADC(&left_wheel, &right_wheel)) // Reads the ADC and updates the state and time of that change
+    //     {
+    //         pid_control(&left_wheel); // Update motor PWM setting
+    //         pid_control(&right_wheel);
+    //     }
+
+    //     output_data(&left_wheel);
+    //     output_data(&right_wheel);
+	//     time--;
+    // }
 }
 
 /**
  * @brief TODO
- * 1. The encoders need to be remounted and we have to find their respective thresholds again.
  * 
- * 2. The wheels need to be set to full speed and their top speeds recalculated.
+ * 1. Radius of the wheel needs to be measured and the length of travel calculated. we can make it more uniform. 
  * 
- * 3. The Threshold and top speed values need to be set in the convert_speed() and read_ADC() functions.
+ * 2. The encoders need to be remounted and we have to find their respective thresholds again.
  * 
- * 4. Radius of the wheel needs to be measured and the length of travel calculated. Most likely the problem 
- *  I was having with the speed is due to the wheel not being a good code wheel and we can make it more uniform. 
+ * 3. The wheels need to be set to full speed and their top speeds recalculated.
  * 
+ * 4. The Threshold and top speed values need to be set in the convert_speed() and read_ADC() functions.
+ * 
+ * 5. Debug it when nothing works.
+ * 
+ * 6. The wheels may need to keep track of their top speeds. This will be important for maxing out the slow wheel and not the fast wheel. 
+ *  They will need to have different ranges for outputing the motor_setting in convert_speed().
  */
 
