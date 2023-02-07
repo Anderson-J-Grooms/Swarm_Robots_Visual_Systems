@@ -9,4 +9,4 @@ def command(redValue, greenValue, blueValue) :
         return "red"
     if (blueValue > blueThreshold):
         return "blue"
-    return 0
+    return "no command"
