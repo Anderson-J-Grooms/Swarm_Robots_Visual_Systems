@@ -19,7 +19,7 @@ struct wheel_control
     clock_t time_0;                 // Past Time
     clock_t time_1;                 // Current Time
 
-    int16_t threshold;
+    int16_t threshold;              // Threshold in the middle of the two readings from the wheel encoders.
 
     enum state current_state;       // Current State of Optical Sensor [High, LOW]
 
@@ -30,11 +30,11 @@ struct wheel_control
     double prev_error;              // Previous error to get instantaneous change for derivative error;
 
     double m_speed;                 // Measured Speed. Gets updated by get_speed().
-    double i_speed;                 // Ideal Speed. Gets set by g.
+    double i_speed;                 // Ideal Speed. Gets set by set_speed().
 
     double motor_setting;           // Setting the PWM for the motor. Gets set by the PID controller.
 
-    double error;                   // The error is the differenct between the ideal and measured speeds; err = i_speed - m_speed.
+    double error;                   // The error is the difference between the ideal and measured speeds; err = i_speed - m_speed.
 };
 
 /**
@@ -95,7 +95,7 @@ void pid_control(struct wheel_control *wheel)
  */
 void get_speed(struct wheel_control *wheel)
 {
-    const double distance = 1.5; // 1.5 cm is how far the wheel travels
+    const double distance = 2.17; // 2.17 cm is how far the wheel travels in a single state
 
     double delta_clock = wheel->time_1 - wheel->time_0;
     double seconds = delta_clock / CLOCKS_PER_SEC;
@@ -142,28 +142,42 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
     // if the new values read from the adc are on the opposite side of the threshold and we have gone one unit in distance
     // update the speed and error
     if (leftReading != left_wheel->current_state)
-    {
-        left_wheel->current_state = leftReading;
+    { 
+	    // Debounce in a way
+        rc_usleep(10);
+	    leftReading = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
+	
+        if (leftReading != left_wheel->current_state)
+	    {
+		    left_wheel->current_state = leftReading;
 
-        left_wheel->time_0 = left_wheel->time_1;
-        left_wheel->time_1 = clock();
+        	left_wheel->time_0 = left_wheel->time_1;
+       		left_wheel->time_1 = clock();
 
-        get_speed(left_wheel); // Calculates speed
-        get_error(left_wheel); // updates error
-        update = true;
+        	get_speed(left_wheel); // Calculates speed
+        	get_error(left_wheel); // updates error
+        	update = true;
+	    }
     }
 
     if (rightReading != right_wheel->current_state)
     {
-        right_wheel->current_state = rightReading;
+     	// Debounce in a way
+        rc_usleep(10);
+	    rightReading = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
+	
+        if (rightReading != right_wheel->current_state)
+	    {
+		    right_wheel->current_state = rightReading;
         
-        right_wheel->time_0 = right_wheel->time_1;
-        right_wheel->time_1 = clock();
+        	right_wheel->time_0 = right_wheel->time_1;
+        	right_wheel->time_1 = clock();
 
-        get_speed(right_wheel); // Calculates speed
-        get_error(right_wheel); // updates error
-        update = true;
-    }
+        	get_speed(right_wheel); // Calculates speed
+        	get_error(right_wheel); // updates error
+        	update = true;
+       	}
+     }
 
     return update;
 }
@@ -190,8 +204,12 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     right_wheel->d = 0.2;
 
     // This is the value that will determine whether the encoder is sending a high or low signal
-    left_wheel->threshold = 2200;
-    right_wheel->threshold = 2200;
+    left_wheel->threshold = 2700;
+    right_wheel->threshold = 2700;
+
+    // The integral of the area before we start is zero
+    left_wheel->i_error = 0.0;
+    right_wheel->i_error = 0.0;
 
     // Pins for writing the PWM setting the motors
     left_wheel->pin = 8;
@@ -277,13 +295,16 @@ int main(int argc, char *argv[])
     //    }
     //
     // We need an initial speed to set the motors to and a goal to calculate error from
-    set_speed(2, &left_wheel);
-    set_speed(2, &right_wheel);
+    // set_speed(2, &left_wheel);
+    // set_speed(2, &right_wheel);
     for(;;)
-    {	    
-        set_motor(&left_wheel);
-        set_motor(&right_wheel);
-        rc_usleep(1000000/50);    
+    {
+        read_ADC(&left_wheel, &right_wheel);
+	    printf("Left Wheel Reading %d, State: %d", rc_adc_read_raw(AIN0), left_wheel.current_state);
+        printf(" Right Wheel Reading %d, State: %d\n", rc_adc_read_raw(AIN1), right_wheel.current_state);
+       // set_motor(&left_wheel);
+       // set_motor(&right_wheel);
+       // rc_usleep(1000000/50);    
     }
     
     // CONFIGURATION LOOP
@@ -321,16 +342,16 @@ int main(int argc, char *argv[])
  * @brief TODO
  * 
  * 1. Radius of the wheel needs to be measured and the length of travel calculated. we can make it more uniform. 
+ *  Diameter of wheel: 6.9 cm
+ *  Circumference of wheel: 6.9cm * pi = 21.7 cm
+ *  Distance Traveled in one state (defined by the transition in the wheel encoder readings): 21.7cm / 10 = 2.17 cm
  * 
  * 2. The encoders need to be remounted and we have to find their respective thresholds again.
  * 
- * 3. The wheels need to be set to full speed and their top speeds recalculated.
+ * 3. The wheels need to be set to full speed and their top speeds recalculated. The wheels may need to keep track of their top speeds. This will be important for maxing out the slow wheel and not the fast wheel. 
+ *  They will need to have different ranges for outputing the motor_setting in convert_speed().
  * 
  * 4. The Threshold and top speed values need to be set in the convert_speed() and read_ADC() functions.
  * 
  * 5. Debug it when nothing works.
- * 
- * 6. The wheels may need to keep track of their top speeds. This will be important for maxing out the slow wheel and not the fast wheel. 
- *  They will need to have different ranges for outputing the motor_setting in convert_speed().
  */
-
