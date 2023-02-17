@@ -277,7 +277,11 @@ int main(int argc, char *argv[])
 
     // Initialize the ADC and SERVO
     rc_adc_init();
-    rc_servo_init();
+    if(rc_servo_init() == -1)
+    {
+        printf("Error: Failed to initialized Servos.");
+        return 1;
+    }
     rc_servo_power_rail_en(1);
 
     // We need to ensure that the structs have the data for each respective wheel.
@@ -297,29 +301,33 @@ int main(int argc, char *argv[])
     // We need an initial speed to set the motors to and a goal to calculate error from
     // set_speed(2, &left_wheel);
     // set_speed(2, &right_wheel);
-    for(;;)
-    {
-        read_ADC(&left_wheel, &right_wheel);
-	    printf("Left Wheel Reading %d, State: %d", rc_adc_read_raw(AIN0), left_wheel.current_state);
-        printf(" Right Wheel Reading %d, State: %d\n", rc_adc_read_raw(AIN1), right_wheel.current_state);
-       // set_motor(&left_wheel);
-       // set_motor(&right_wheel);
-       // rc_usleep(1000000/50);    
-    }
+    // for(;;)
+    // {
+    //     read_ADC(&left_wheel, &right_wheel);
+	//     printf("Left Wheel Reading %d, State: %d", rc_adc_read_raw(AIN0), left_wheel.current_state);
+    //     printf(" Right Wheel Reading %d, State: %d\n", rc_adc_read_raw(AIN1), right_wheel.current_state);
+    //    // set_motor(&left_wheel);
+    //    // set_motor(&right_wheel);
+    //    // rc_usleep(1000000/50);    
+    // }
     
     // CONFIGURATION LOOP
-    //for(;;)
-    //{
+    rc_servo_send_pulse_normalized(left_wheel.pin, 0.5);
+    for(;;)
+    {
         // Use to find threshold and ensure encoders are labeled properly in code
         // printf("Left Wheel Reading: %d\nRight Wheel Reading: %d\n", rc_adc_read_raw(AIN0), rc_adc_read_raw(AIN1));
 
         // Needs the Threshold set first
-        // if(readADC(&left_wheel, &right_wheel))
-        // {
-        //     output_data(&left_wheel);
-        //     output_data(&right_wheel);
-        // }
-    //}
+        if(read_ADC(&left_wheel, &right_wheel))
+        {
+            // pid_control(&left_wheel); // Update motor PWM setting
+            // pid_control(&right_wheel);
+            output_data(&left_wheel);
+            // output_data(&right_wheel);
+        }
+        rc_servo_send_pulse_normalized(left_wheel.pin, 0.5);
+    }
 
     // CONTROL LOOP
     // // Poll The adc and wait for a change
@@ -339,7 +347,7 @@ int main(int argc, char *argv[])
 }
 
 /**
- * @brief TODO
+ * @brief Sensor Characterization 
  * 
  * 1. Radius of the wheel needs to be measured and the length of travel calculated. we can make it more uniform. 
  *  Diameter of wheel: 6.9 cm
