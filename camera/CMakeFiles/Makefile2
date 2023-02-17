@@ -72,7 +72,7 @@ CMAKE_BINARY_DIR = /home/s22/Git/Swarm_Robots_Visual_Systems/camera
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/square_detect.dir/all
+all: CMakeFiles/pose_from_homography.dir/all
 
 .PHONY : all
 
@@ -82,36 +82,36 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/square_detect.dir/clean
+clean: CMakeFiles/pose_from_homography.dir/clean
 
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/square_detect.dir
+# Target rules for target CMakeFiles/pose_from_homography.dir
 
 # All Build rule for target.
-CMakeFiles/square_detect.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/square_detect.dir/build.make CMakeFiles/square_detect.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/square_detect.dir/build.make CMakeFiles/square_detect.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/s22/Git/Swarm_Robots_Visual_Systems/camera/CMakeFiles --progress-num=1,2 "Built target square_detect"
-.PHONY : CMakeFiles/square_detect.dir/all
+CMakeFiles/pose_from_homography.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pose_from_homography.dir/build.make CMakeFiles/pose_from_homography.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pose_from_homography.dir/build.make CMakeFiles/pose_from_homography.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/s22/Git/Swarm_Robots_Visual_Systems/camera/CMakeFiles --progress-num=1,2 "Built target pose_from_homography"
+.PHONY : CMakeFiles/pose_from_homography.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/square_detect.dir/rule: cmake_check_build_system
+CMakeFiles/pose_from_homography.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/s22/Git/Swarm_Robots_Visual_Systems/camera/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/square_detect.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/pose_from_homography.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/s22/Git/Swarm_Robots_Visual_Systems/camera/CMakeFiles 0
-.PHONY : CMakeFiles/square_detect.dir/rule
+.PHONY : CMakeFiles/pose_from_homography.dir/rule
 
 # Convenience name for target.
-square_detect: CMakeFiles/square_detect.dir/rule
+pose_from_homography: CMakeFiles/pose_from_homography.dir/rule
 
-.PHONY : square_detect
+.PHONY : pose_from_homography
 
 # clean rule for target.
-CMakeFiles/square_detect.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/square_detect.dir/build.make CMakeFiles/square_detect.dir/clean
-.PHONY : CMakeFiles/square_detect.dir/clean
+CMakeFiles/pose_from_homography.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pose_from_homography.dir/build.make CMakeFiles/pose_from_homography.dir/clean
+.PHONY : CMakeFiles/pose_from_homography.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.
