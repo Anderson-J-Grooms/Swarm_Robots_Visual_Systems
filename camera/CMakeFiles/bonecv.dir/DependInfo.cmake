@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/debian/camera/bonecv.cpp" "/home/debian/camera/CMakeFiles/bonecv.dir/bonecv.cpp.o"
+  "/home/s22/Git/Swarm_Robots_Visual_Systems/camera/bonecv.cpp" "/home/s22/Git/Swarm_Robots_Visual_Systems/camera/CMakeFiles/bonecv.dir/bonecv.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

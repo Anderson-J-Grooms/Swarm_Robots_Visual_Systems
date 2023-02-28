@@ -19,7 +19,7 @@ message(STATUS "    libraries: ${OpenCV_LIBS}")
 message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
 # Declare the executable target built from your sources
-add_executable(square_detect square_detect.cpp)
+add_executable(pose_from_homography pose_from_homography.cpp)
 
 # Link your application with OpenCV libraries
-target_link_libraries(square_detect PRIVATE ${OpenCV_LIBS})
+target_link_libraries(pose_from_homography PRIVATE ${OpenCV_LIBS})

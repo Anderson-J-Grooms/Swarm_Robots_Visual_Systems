@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/debian/camera/bonecv.cpp
+/home/s22/Git/Swarm_Robots_Visual_Systems/camera/bonecv.cpp
 iostream
 -
 opencv2/opencv.hpp
