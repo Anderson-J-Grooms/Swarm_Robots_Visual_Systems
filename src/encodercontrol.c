@@ -6,6 +6,9 @@
 #include <rc/time.h>
 #include <time.h>
 
+#define AIN0 3
+#define AIN1 4
+
 enum state 
 {
     LOW,
@@ -22,6 +25,8 @@ struct wheel_control
     int16_t threshold;              // Threshold in the middle of the two readings from the wheel encoders.
 
     enum state current_state;       // Current State of Optical Sensor [High, LOW]
+    enum state start_state;         // Starting state of the robot. This is important because the divisions for the High and Low
+                                    // states are not the same.
 
     double p, i, d;                 // PID values for the controller
 
@@ -35,6 +40,9 @@ struct wheel_control
     double motor_setting;           // Setting the PWM for the motor. Gets set by the PID controller.
 
     double error;                   // The error is the difference between the ideal and measured speeds; err = i_speed - m_speed.
+
+    double max_speed;               // The max speed in cm/s for the wheel
+    double max_frequency;           // The max frequency of the wheel (PWM Setting).
 };
 
 /**
@@ -61,7 +69,7 @@ double convert_speed(double speed, int pin)
 }
 
 /**
- * @brief Set the motor PWM setting
+ * @brief Set the motor PWM setting. This should be called from the control loop to allow for pid_control to update the setting.
  * 
  * @param wheel The wheel to set
  * @return int Returns 0 on success and 1 if failure
@@ -95,7 +103,7 @@ void pid_control(struct wheel_control *wheel)
  */
 void get_speed(struct wheel_control *wheel)
 {
-    const double distance = 2.17; // 2.17 cm is how far the wheel travels in a single state
+    const double distance = 4.34; // 2.17 cm is how far the wheel travels in a single state
 
     double delta_clock = wheel->time_1 - wheel->time_0;
     double seconds = delta_clock / CLOCKS_PER_SEC;
@@ -130,8 +138,8 @@ void get_error(struct wheel_control *wheel)
 bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_wheel)
 {
     // Analog input pins
-    int AIN0 = 3;
-    int AIN1 = 4;
+    // int AIN0 = 3;
+    // int AIN1 = 4;
 
     bool update = false; // Return so we know if there were any changes.
 
@@ -141,7 +149,7 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
     // Compare to previous values
     // if the new values read from the adc are on the opposite side of the threshold and we have gone one unit in distance
     // update the speed and error
-    if (leftReading != left_wheel->current_state)
+    if (leftReading != left_wheel->current_state && leftReading == left_wheel->start_state)
     { 
 	    // Debounce in a way
         rc_usleep(10);
@@ -160,7 +168,7 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
 	    }
     }
 
-    if (rightReading != right_wheel->current_state)
+    if (rightReading != right_wheel->current_state && rightReading == right_wheel->start_state)
     {
      	// Debounce in a way
         rc_usleep(10);
@@ -191,8 +199,8 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
 void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_wheel)
 {
     // Analog input pins
-    int AIN0 = 3;
-    int AIN1 = 4;
+    // int AIN0 = 3;
+    // int AIN1 = 4;
     
     // These values are not correct nor good attempts at being close
     left_wheel->p = 0.9;
@@ -218,6 +226,12 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     // Current states of the wheel encoders for initializing the variables
     left_wheel->current_state = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
     right_wheel->current_state = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
+
+    left_wheel->start_state = left_wheel->current_state;
+    right_wheel->start_state = right_wheel->current_state;
+    
+    left_wheel->max_speed = 2.17; // cm/s
+    left_wheel->max_frequency = 1.0; // PWM motor setting. https://beagleboard.org/static/librobotcontrol/group___a_d_c.html
 }
 
 /**
@@ -268,8 +282,8 @@ void output_data(struct wheel_control *wheel)
 int main(int argc, char *argv[]) 
 {
     // Analog input pins
-    int AIN0 = 3;
-    int AIN1 = 4;
+    // int AIN0 = 3;
+    // int AIN1 = 4;
     
     // Create the structs for controlling the motors
     struct wheel_control left_wheel;
@@ -277,12 +291,12 @@ int main(int argc, char *argv[])
 
     // Initialize the ADC and SERVO
     rc_adc_init();
-    if(rc_servo_init() == -1)
-    {
-        printf("Error: Failed to initialized Servos.");
-        return 1;
-    }
-    rc_servo_power_rail_en(1);
+    // if(rc_servo_init() == -1)
+    // {
+    //     printf("Error: Failed to initialized Servos.");
+    //     return 1;
+    // }
+    // rc_servo_power_rail_en(1);
 
     // We need to ensure that the structs have the data for each respective wheel.
     init_pid(&left_wheel, &right_wheel); // Sets the pid values for each wheel and the time_0 for each wheel;
@@ -312,7 +326,7 @@ int main(int argc, char *argv[])
     // }
     
     // CONFIGURATION LOOP
-    rc_servo_send_pulse_normalized(left_wheel.pin, 0.5);
+    set_speed(1.5, &left_wheel);
     for(;;)
     {
         // Use to find threshold and ensure encoders are labeled properly in code
@@ -323,10 +337,12 @@ int main(int argc, char *argv[])
         {
             // pid_control(&left_wheel); // Update motor PWM setting
             // pid_control(&right_wheel);
-            output_data(&left_wheel);
-            // output_data(&right_wheel);
+            // output_data(&left_wheel);
+            // output_date(&right_wheel);
         }
-        rc_servo_send_pulse_normalized(left_wheel.pin, 0.5);
+        printf("ADC PIN: %d, READING: %f ", AIN0, rc_adc_read_volt(AIN0));
+        printf("ADC PIN: %d, READING: %f\n", AIN1, rc_adc_read_volt(AIN1));
+        rc_usleep(100000);
     }
 
     // CONTROL LOOP
@@ -352,7 +368,7 @@ int main(int argc, char *argv[])
  * 1. Radius of the wheel needs to be measured and the length of travel calculated. we can make it more uniform. 
  *  Diameter of wheel: 6.9 cm
  *  Circumference of wheel: 6.9cm * pi = 21.7 cm
- *  Distance Traveled in one state (defined by the transition in the wheel encoder readings): 21.7cm / 10 = 2.17 cm
+ *  Distance Traveled in one state (defined by the transition in the wheel encoder readings): 21.7cm / 5 = 4.34 cm
  * 
  * 2. The encoders need to be remounted and we have to find their respective thresholds again.
  * 
