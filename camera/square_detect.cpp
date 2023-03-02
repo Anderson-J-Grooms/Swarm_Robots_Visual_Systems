@@ -95,7 +95,7 @@ vector<Point> approx;
 int main(int argc, char** argv)
 {
     Mat image;
-    double KNOWN_WIDTH = 3.0 * 25.4;
+    double KNOWN_WIDTH = 4.0 * 25.4;
     image = imread("capture.png");
 vector<vector<Point>>squares;
     
@@ -144,10 +144,5 @@ vector<vector<Point>>squares;
     }
     
     // the camera will be deinitialized automatically in VideoCapture destructor
-    return 0;
-
-        
-
-
     return 0;
 }

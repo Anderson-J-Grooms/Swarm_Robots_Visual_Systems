@@ -98,6 +98,9 @@ square_detect_EXTERNAL_OBJECTS =
 
 square_detect: CMakeFiles/square_detect.dir/square_detect.cpp.o
 square_detect: CMakeFiles/square_detect.dir/build.make
+square_detect: /usr/local/lib/arm-linux-gnueabihf/libopencv_calib3d.so.4.6.0
+square_detect: /usr/local/lib/arm-linux-gnueabihf/libopencv_features2d.so.4.6.0
+square_detect: /usr/local/lib/arm-linux-gnueabihf/libopencv_flann.so.4.6.0
 square_detect: /usr/local/lib/arm-linux-gnueabihf/libopencv_highgui.so.4.6.0
 square_detect: /usr/local/lib/arm-linux-gnueabihf/libopencv_videoio.so.4.6.0
 square_detect: /usr/local/lib/arm-linux-gnueabihf/libopencv_imgcodecs.so.4.6.0

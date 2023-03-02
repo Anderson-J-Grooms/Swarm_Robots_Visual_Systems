@@ -130,44 +130,44 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named pose_from_homography
+# Target rules for targets named square_detect
 
 # Build rule for target.
-pose_from_homography: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pose_from_homography
-.PHONY : pose_from_homography
+square_detect: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 square_detect
+.PHONY : square_detect
 
 # fast build rule for target.
-pose_from_homography/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/pose_from_homography.dir/build.make CMakeFiles/pose_from_homography.dir/build
-.PHONY : pose_from_homography/fast
+square_detect/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/square_detect.dir/build.make CMakeFiles/square_detect.dir/build
+.PHONY : square_detect/fast
 
-pose_from_homography.o: pose_from_homography.cpp.o
+square_detect.o: square_detect.cpp.o
 
-.PHONY : pose_from_homography.o
+.PHONY : square_detect.o
 
 # target to build an object file
-pose_from_homography.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/pose_from_homography.dir/build.make CMakeFiles/pose_from_homography.dir/pose_from_homography.cpp.o
-.PHONY : pose_from_homography.cpp.o
+square_detect.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/square_detect.dir/build.make CMakeFiles/square_detect.dir/square_detect.cpp.o
+.PHONY : square_detect.cpp.o
 
-pose_from_homography.i: pose_from_homography.cpp.i
+square_detect.i: square_detect.cpp.i
 
-.PHONY : pose_from_homography.i
+.PHONY : square_detect.i
 
 # target to preprocess a source file
-pose_from_homography.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/pose_from_homography.dir/build.make CMakeFiles/pose_from_homography.dir/pose_from_homography.cpp.i
-.PHONY : pose_from_homography.cpp.i
+square_detect.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/square_detect.dir/build.make CMakeFiles/square_detect.dir/square_detect.cpp.i
+.PHONY : square_detect.cpp.i
 
-pose_from_homography.s: pose_from_homography.cpp.s
+square_detect.s: square_detect.cpp.s
 
-.PHONY : pose_from_homography.s
+.PHONY : square_detect.s
 
 # target to generate assembly for a file
-pose_from_homography.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/pose_from_homography.dir/build.make CMakeFiles/pose_from_homography.dir/pose_from_homography.cpp.s
-.PHONY : pose_from_homography.cpp.s
+square_detect.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/square_detect.dir/build.make CMakeFiles/square_detect.dir/square_detect.cpp.s
+.PHONY : square_detect.cpp.s
 
 # Help Target
 help:
@@ -177,10 +177,10 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... pose_from_homography"
-	@echo "... pose_from_homography.o"
-	@echo "... pose_from_homography.i"
-	@echo "... pose_from_homography.s"
+	@echo "... square_detect"
+	@echo "... square_detect.o"
+	@echo "... square_detect.i"
+	@echo "... square_detect.s"
 .PHONY : help
 
 
