@@ -124,8 +124,6 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
 int main(int argc, char** argv)
 {
         VideoCapture capture(0);
-	capture.set(CAP_PROP_FRAME_WIDTH, 320);
-	capture.set(CAP_PROP_FRAME_HEIGHT, 176);
 	Mat image;
 	capture >> image;
 

@@ -98,6 +98,9 @@ squares_test_EXTERNAL_OBJECTS =
 
 squares_test: CMakeFiles/squares_test.dir/squares_test.cpp.o
 squares_test: CMakeFiles/squares_test.dir/build.make
+squares_test: /usr/local/lib/arm-linux-gnueabihf/libopencv_calib3d.so.4.6.0
+squares_test: /usr/local/lib/arm-linux-gnueabihf/libopencv_features2d.so.4.6.0
+squares_test: /usr/local/lib/arm-linux-gnueabihf/libopencv_flann.so.4.6.0
 squares_test: /usr/local/lib/arm-linux-gnueabihf/libopencv_highgui.so.4.6.0
 squares_test: /usr/local/lib/arm-linux-gnueabihf/libopencv_videoio.so.4.6.0
 squares_test: /usr/local/lib/arm-linux-gnueabihf/libopencv_imgcodecs.so.4.6.0
