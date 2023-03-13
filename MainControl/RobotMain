@@ -1,0 +1,26 @@
+import time
+import RobotMain_build
+from cffi import FFI
+
+
+tPrev = time.time()
+tNow = time.time()
+
+leftPinE = 8
+rightPinE = 1
+
+left = 0
+right = 0
+
+
+
+while True:
+    tPrev = tNow
+    
+    if left != get_state(leftPinE):
+        tNow = time.time()
+        left = get_state(leftPinE)
+
+    if right != get_state(rightPinE):
+        tNow = time.time()
+        right = get_state(rightPinE)
