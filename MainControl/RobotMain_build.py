@@ -5,6 +5,7 @@ ffibuilder = FFI()
 # globals needed to use the shared object. It must be in valid C syntax.
 ffibuilder.cdef("""
     int get_state(int pin);
+    void init_control();
 """)
 # set_source() gives the name of the python extension module to
 # produce, and some C source code as a string.  This C code needs
