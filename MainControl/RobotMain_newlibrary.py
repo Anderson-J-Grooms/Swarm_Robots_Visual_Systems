@@ -13,8 +13,16 @@ def calculate_speed(t_Prev, t_Now):
     delta_t = t_Now - t_Prev
     return distance / delta_t
 
-def pid_control(p, i, d, current_setting, speed):
-   return current_setting
+def calculate_error(measured_speed, ideal_speed):
+    return ideal_speed - measured_speed
+
+def pid_control(p, i, d, ideal_speed, speed, motor_setting, max_speed):
+   error = calculate_error(speed, ideal_speed)
+   proportional_component = convert_speed_to_duty(p * error, max_speed)
+
+   output_motor_setting = proportional_component + motor_setting
+   # print("Output Motor Setting: {}, Proportional Component: {}, Input Motor Setting: {}".format(output_motor_setting, proportional_component, motor_setting))
+   return output_motor_setting
 
 # Function for converting between an input speed from control to an output duty
 # cycle for the servos
@@ -36,8 +44,11 @@ right_encoder = gpio.Input(encoder_chip, right_encoder_pin)
     
 servo.enable()
 
-left_motor_setting = 1
-right_motor_setting = -1
+# Motor speeds
+left_motor_speed = 20 # cm/s
+left_motor_setting = convert_speed_to_duty(left_motor_speed, 23.912102546048775)
+right_motor_speed = 20 # cm/s
+right_motor_setting = convert_speed_to_duty(right_motor_speed, -22.727054005733176)
 
 # Set up clocks to periodically update the motors
 period = 0.01
@@ -64,6 +75,14 @@ left_state = left_start_state
 right_start_state = right_encoder.get()
 right_state = right_start_state
 
+# Error variables
+left_measured_error = 0
+left_prev_error = 0
+left_integral_error = 0
+right_measure_error = 0
+right_prev_error = 0
+right_integral_error = 0
+
 # Characterizations
 # Right max Speed: 22.727054005733176 cm / s
 # Left max Speed: 23.912102546048775 cm / s
@@ -82,12 +101,13 @@ while True:
             # Update time
             left_tPrev = left_tNow
             left_tNow = time.time()
-            # Calculate Speed
+            # Calculate Speed and error
             speed = calculate_speed(left_tPrev, left_tNow)
+            error = calculate_error(speed, left_motor_speed)
+            print("Left Speed: {}, Left Setting: {}, Left Error: {}".format(speed, left_motor_setting, error))
             # Control
-            left_motor_setting = pid_control(.9, 0, 0, left_motor_setting, speed)
+            left_motor_setting = pid_control(1, 0, 0, left_motor_speed, speed, left_motor_setting, 23.912102546048775)
             leftServo.set(left_motor_setting)
-            print("Left Speed: {}".format(speed))
 
     if right_state != right_reading:
         right_state = right_reading
@@ -96,9 +116,10 @@ while True:
             right_tPrev = right_tNow
             right_tNow = time.time()
             speed = calculate_speed(right_tPrev, right_tNow)
-            right_motor_setting = pid_control(1, 0, 0, right_motor_setting, speed)
+            error = calculate_error(speed, right_motor_speed)
+            print("Right Speed: {}, Right Setting: {} Right Error: {}".format(speed, right_motor_setting, error))
+            right_motor_setting = pid_control(1, 0, 0, right_motor_speed, speed, right_motor_setting, -22.727054005733176)
             rightServo.set(right_motor_setting)
-            print("Right Speed: {}".format(speed))
 
 clk0.stop()
 clk1.stop()
