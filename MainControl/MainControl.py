@@ -190,6 +190,10 @@ time.sleep(1)
 leftServo.set(left_motor_setting)
 rightServo.set(right_motor_setting)
 
+# Function that takes a new speed for the two motor
+# and updates the necessary variables
+# it then calls the servo.set() function to update
+# the pulse being sent to the servos
 def update_motors(left_new_speed, right_new_speed):
     global left_motor_setting, right_motor_setting
     global left_motor_speed, right_motor_speed
@@ -216,6 +220,7 @@ left_start_state = left_encoder.get()
 left_state = left_start_state
 right_start_state = right_encoder.get()
 right_state = right_start_state
+control_current_state = "black"
 
 # Error variables
 left_measured_error = 0
@@ -233,10 +238,16 @@ right_integral_error = 0
 # Main control loop
 while True:
     # Take a color reading and decide if we are changing states
-    color = get_color()
-    if color == "white":
+    state_color = get_color()
+    if state_color == "white" and state_color != control_current_state:
+        control_current_state = state_color
         print("STOPPING")
         update_motors(0, 0)
+
+    elif state_color == "black" and state_color != control_current_state:
+        control_current_state = state_color
+        print("STARTING")
+        update_motors(20, 20)
 
     # Get Readings from encoders for comparison
     left_reading = left_encoder.get()
