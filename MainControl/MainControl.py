@@ -12,6 +12,21 @@ from colorCheck import *
 #             CONTROL FUNCTIONS
 ################################################
 
+# A function that cuts off the range so that the wheels only spin
+# forward. It takes a bounded_setting between [-1 1].
+# The right servo is encoded with a 1 and the left with a 0.
+def cutoff(servo, bounded_setting):
+    if servo:
+        if bounded_setting > 0:
+            return 0
+        else:
+            return bounded_setting
+    else:
+        if bounded_setting < 0:
+            return 0
+        else:
+            return bounded_setting
+
 # A function for normalizing the motor setting to the range [-1 1].
 # The servo motors have a safe range of operation between those
 # two points 
@@ -35,12 +50,13 @@ def calculate_error(measured_speed, ideal_speed):
 
 # Function that implements pid control. Currently P works sufficiently and the
 # other two components have not been implemented.
-def pid_control(p, i, d, error, motor_setting, max_speed):
+# wheel_id is 1 for the right servo and 0 for the left
+def pid_control(p, i, d, error, motor_setting, max_speed, wheel_id):
    # Since the error has units of cm/s we need to convert to us for sending to the servos
    proportional_component = convert_speed_to_duty(p * error, max_speed)
 
    # We need to normalize the output to a range of [-1 1]
-   output_motor_setting = norm(proportional_component + motor_setting)
+   output_motor_setting = cutoff(wheel_id, norm(proportional_component + motor_setting))
    print("Output Motor Setting: {}, Proportional Component: {}, Input Motor Setting: {}".format(output_motor_setting, proportional_component, motor_setting))
    return output_motor_setting
 
@@ -200,8 +216,8 @@ def update_motors(left_new_speed, right_new_speed):
 
     left_motor_speed = left_new_speed
     right_motor_speed = right_new_speed
-    left_motor_setting = convert_speed_to_duty(left_motor_speed)
-    right_motor_setting = convert_speed_to_duty(right_motor_speed)
+    left_motor_setting = convert_speed_to_duty(left_motor_speed, 23.912102546048775)
+    right_motor_setting = convert_speed_to_duty(right_motor_speed, -22.727054005733176)
     leftServo.set(left_motor_setting)
     rightServo.set(right_motor_setting)
 
@@ -244,10 +260,11 @@ while True:
         print("STOPPING")
         update_motors(0, 0)
 
-    elif state_color == "black" and state_color != control_current_state:
+    elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
         print("STARTING")
         update_motors(20, 20)
+    #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
 
     # Get Readings from encoders for comparison
     left_reading = left_encoder.get()
@@ -266,19 +283,18 @@ while True:
             error = calculate_error(speed, left_motor_speed)
             print("Left Speed: {}, Left Setting: {}, Left Error: {}".format(speed, left_motor_setting, error))
             # Control
-            left_motor_setting = pid_control(1, 0, 0, error, left_motor_setting, 23.912102546048775)
+            left_motor_setting = pid_control(1, 0, 0, error, left_motor_setting, 23.912102546048775, 0)
             leftServo.set(left_motor_setting)
 
     if right_state != right_reading:
         right_state = right_reading
-
         if right_state == right_start_state:
             right_tPrev = right_tNow
             right_tNow = time.time()
             speed = calculate_speed(right_tPrev, right_tNow)
             error = calculate_error(speed, right_motor_speed)
             print("Right Speed: {}, Right Setting: {} Right Error: {}".format(speed, right_motor_setting, error))
-            right_motor_setting = pid_control(1, 0, 0, error, right_motor_setting, -22.727054005733176)
+            right_motor_setting = pid_control(1, 0, 0, error, right_motor_setting, -22.727054005733176, 1)
             rightServo.set(right_motor_setting)
 
 
