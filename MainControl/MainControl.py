@@ -8,6 +8,19 @@ from rcpy.servo import servo1 as rightServo
 import smbus
 from colorCheck import *
 
+################################################
+#             CONTROL FUNCTIONS
+################################################
+
+# A function for normalizing the motor setting to the range [-1 1].
+# The servo motors have a safe range of operation between those
+# two points 
+def norm(unbounded_setting):
+    if abs(unbounded_setting) <= 1:
+        return unbounded_setting
+    else:
+        return unbounded_setting / abs(unbounded_setting)
+
 # Function for calculating the speed based on the wheel diameter
 # and the length of time it took to travel 4.34 centimeters which
 # is 1/5 the circumference of the wheel
@@ -16,30 +29,37 @@ def calculate_speed(t_Prev, t_Now):
     delta_t = t_Now - t_Prev
     return distance / delta_t
 
+# Simple funtion to calculate the error from the measured speed
 def calculate_error(measured_speed, ideal_speed):
     return ideal_speed - measured_speed
 
-def pid_control(p, i, d, ideal_speed, speed, motor_setting, max_speed):
-   error = calculate_error(speed, ideal_speed)
+# Function that implements pid control. Currently P works sufficiently and the
+# other two components have not been implemented.
+def pid_control(p, i, d, error, motor_setting, max_speed):
+   # Since the error has units of cm/s we need to convert to us for sending to the servos
    proportional_component = convert_speed_to_duty(p * error, max_speed)
 
-   output_motor_setting = proportional_component + motor_setting
+   # We need to normalize the output to a range of [-1 1]
+   output_motor_setting = norm(proportional_component + motor_setting)
    print("Output Motor Setting: {}, Proportional Component: {}, Input Motor Setting: {}".format(output_motor_setting, proportional_component, motor_setting))
    return output_motor_setting
 
 # Function for converting between an input speed from control to an output duty
 # cycle for the servos
 def convert_speed_to_duty(speed, max_speed):
-    if abs(speed) > abs(max_speed):
-        return abs(speed) / speed 
-    
-    return speed / max_speed
+    return norm(speed / max_speed)
 
+# Function for converting between us for the duty cyle and cm/s for the speed of the motors
 def convert_duty_to_speed(motor_setting, max_speed):
-    if motor_setting > 1:
-        return max_speed
+    return norm(motor_setting) * max_speed
 
-    return motor_setting * max_speed
+################################################
+#          END FUNCTION DECLARATIONS
+################################################
+
+################################################
+#              RGB SENSOR SETUP
+################################################
 
 #light sensor data
 # Get I2C bus
@@ -59,6 +79,7 @@ firstCount = 0
 second = True
 secondCount = 0
 
+# Function for calibrating the RGB sensor for the ambient light conditions
 def calibrate_light():
     global first, firstCount, second, secondCount
     global greenBlack, greenWhite, redBlack, redWhite, blueBlack, blueWhite
@@ -94,7 +115,7 @@ def calibrate_light():
                 print("press enter to continue")
                 input()
             
-
+# Function for calling the RGB sensor code and getting a color
 def get_color():
     global greenBlack, greenWhite, redBlack, redWhite, blueBlack, blueWhite
     global rScale, gScale, bScale
@@ -130,16 +151,25 @@ def get_color():
     v = cmax * 100
     return colorCheck(h, s, v)
 
-# Set up GPIO pins
+calibrate_light()
+
+################################################
+#            END RGB SENSOR SETUP
+################################################
+
+# Set up GPIO pins and configure Wheel Encoders
 left_encoder_pin = 25
 right_encoder_pin = 17
 encoder_chip = 1
 left_encoder = gpio.Input(encoder_chip, left_encoder_pin)
 right_encoder = gpio.Input(encoder_chip, right_encoder_pin)
 
+################################################
+#                  SERVO SETUP
+################################################
+
 # Enable servo and calibrate light sensor
 servo.enable()
-calibrate_light()
 
 # Motor speeds
 left_motor_speed = 20 # cm/s
@@ -153,12 +183,27 @@ leftServo.set(0.0)
 rightServo.set(0.0)
 clk0 = leftServo.start(period)
 clk1 = rightServo.start(period)
+
+# We wait for a short amount of time while sending 0.0 pulse
+# before sending the real setting
 time.sleep(1)
 leftServo.set(left_motor_setting)
 rightServo.set(right_motor_setting)
 
-# We wait for a short amount of time while sending 0 pulse
-# before sending the real setting
+def update_motors(left_new_speed, right_new_speed):
+    global left_motor_setting, right_motor_setting
+    global left_motor_speed, right_motor_speed
+
+    left_motor_speed = left_new_speed
+    right_motor_speed = right_new_speed
+    left_motor_setting = convert_speed_to_duty(left_motor_speed)
+    right_motor_setting = convert_speed_to_duty(right_motor_speed)
+    leftServo.set(left_motor_setting)
+    rightServo.set(right_motor_setting)
+
+################################################
+#              END SERVO SETUP
+################################################   
 
 # Time variables
 left_tPrev = time.time()
@@ -185,12 +230,13 @@ right_integral_error = 0
 # Left max Speed: 23.912102546048775 cm / s
 # Wheel Circumference: 21.7 cm
 
+# Main control loop
 while True:
+    # Take a color reading and decide if we are changing states
     color = get_color()
     if color == "white":
         print("STOPPING")
-        left_motor_speed = 0
-        right_motor_speed = 0
+        update_motors(0, 0)
 
     # Get Readings from encoders for comparison
     left_reading = left_encoder.get()
@@ -209,7 +255,7 @@ while True:
             error = calculate_error(speed, left_motor_speed)
             print("Left Speed: {}, Left Setting: {}, Left Error: {}".format(speed, left_motor_setting, error))
             # Control
-            left_motor_setting = pid_control(1, 0, 0, left_motor_speed, speed, left_motor_setting, 23.912102546048775)
+            left_motor_setting = pid_control(1, 0, 0, error, left_motor_setting, 23.912102546048775)
             leftServo.set(left_motor_setting)
 
     if right_state != right_reading:
@@ -221,7 +267,7 @@ while True:
             speed = calculate_speed(right_tPrev, right_tNow)
             error = calculate_error(speed, right_motor_speed)
             print("Right Speed: {}, Right Setting: {} Right Error: {}".format(speed, right_motor_setting, error))
-            right_motor_setting = pid_control(1, 0, 0, right_motor_speed, speed, right_motor_setting, -22.727054005733176)
+            right_motor_setting = pid_control(1, 0, 0, error, right_motor_setting, -22.727054005733176)
             rightServo.set(right_motor_setting)
 
 
