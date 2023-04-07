@@ -12,6 +12,23 @@ from colorCheck import *
 #             CONTROL FUNCTIONS
 ################################################
 
+# A function for finding the second wheel speed when turning
+# at a desired radius. 
+# r is the radius of the circle that the robot should turn at.
+# v1 is the speed of the inner wheel (slower wheel)
+# returns v2 which is the outer wheel speed (faster wheel)
+# R = ((V2 + V1) / (V2 - V1))W
+# (- (R/W)(V1) - V1) / (1-(R/W)) = V2
+def turn_at_radius(r, v1):
+    width = 4 # width of the robot wheels in cm
+    if r < width:
+        print("Turning radius too tight: {} cm".format(r))
+        print("Going Straight")
+        return v1
+    
+    return (((-(r/width)*v1) - v1) / (1 - (r / width)))
+
+
 # A function that cuts off the range so that the wheels only spin
 # forward. It takes a bounded_setting between [-1 1].
 # The right servo is encoded with a 1 and the left with a 0.
