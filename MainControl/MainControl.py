@@ -17,13 +17,13 @@ from colorCheck import *
 # The right servo is encoded with a 1 and the left with a 0.
 def cutoff(servo, bounded_setting):
     if servo:
-        if bounded_setting > 0:
-            return 0
+        if bounded_setting > 0.0:
+            return 0.0
         else:
             return bounded_setting
     else:
-        if bounded_setting < 0:
-            return 0
+        if bounded_setting < 0.0:
+            return 0.0
         else:
             return bounded_setting
 
@@ -31,28 +31,35 @@ def cutoff(servo, bounded_setting):
 # The servo motors have a safe range of operation between those
 # two points 
 def norm(unbounded_setting):
-    if abs(unbounded_setting) <= 1:
+    if abs(unbounded_setting) <= 1.0:
         return unbounded_setting
     else:
         return unbounded_setting / abs(unbounded_setting)
         
 # A function for finding the second wheel speed when turning
-# at a desired radius. 
+# at a desired radius. Because the function returns the inner wheel
+# speed this function is safe to call with the current wheel speed of
+# the outer wheel without having to worry about going outside the bounds
+# of the safe servo range [-1 1].
 # r is the radius of the circle that the robot should turn at.
-# v1 is the speed of the inner wheel (slower wheel)
-# returns v2 which is the outer wheel speed (faster wheel)
-# R = ((V2 + V1) / (V2 - V1))W
-# (- (R/W)(V1) - V1) / (1-(R/W)) = V2
+# v1 is the speed of the outer wheel (faster wheel)
+# returns v2 which is the inner wheel speed (slower wheel)
+# r = ((v1+v2)/(v1-v2) - 1)(d/2)
+# (r * 2/d) + 1 = v1+v2/v1-v2
+# ((r*2/d) + 1)v1 - ((r*2/d) + 1)v2 = v1 + v2
+# ((r*2/d) + 1)v1 - v1 = ((r*2/d) + 1)v2 + v2
+# ((r*2/d) + 1)v1 - v1 = (((r*2/d) + 1) + 1)v2
+# (((r*2/d) + 1)v1 - v1) / (((r*2/d) + 1) + 1) = v2
 def turn_at_radius(r, v1):
-    width = 4 # width of the robot wheels in cm
+    width = 11.5 # width of the robot wheels in cm
     if r < width:
         print("Turning radius too tight: {} cm".format(r))
         print("Going Straight")
         return v1
     
-    v2 = (((-(r/width)*v1) - v1) / (1 - (r / width)))
-
-    return norm(v2)
+    v2 = ((((r * 2 / width) + 1) * v1) - v1) / (((r * 2 / width) + 1) + 1)
+    
+    return v2
 
 # Function for calculating the speed based on the wheel diameter
 # and the length of time it took to travel 4.34 centimeters which
@@ -206,13 +213,13 @@ right_encoder = gpio.Input(encoder_chip, right_encoder_pin)
 servo.enable()
 
 # Motor speeds
-left_motor_speed = 20 # cm/s
-left_motor_setting = convert_speed_to_duty(left_motor_speed, 23.912102546048775)
-right_motor_speed = 20 # cm/s
-right_motor_setting = convert_speed_to_duty(right_motor_speed, -22.727054005733176)
+left_motor_speed = 18 # cm/s
+left_motor_setting = convert_speed_to_duty(left_motor_speed, 21.924028091423587)
+right_motor_speed = 18 # cm/s
+right_motor_setting = convert_speed_to_duty(right_motor_speed, -20.9995597347149)
 
 # Set up clocks to periodically update the motors
-period = 0.01
+period = 0.02
 leftServo.set(0.0)
 rightServo.set(0.0)
 clk0 = leftServo.start(period)
@@ -220,7 +227,8 @@ clk1 = rightServo.start(period)
 
 # We wait for a short amount of time while sending 0.0 pulse
 # before sending the real setting
-time.sleep(1)
+print("Press enter to continue")
+input()
 leftServo.set(left_motor_setting)
 rightServo.set(right_motor_setting)
 
@@ -234,8 +242,8 @@ def update_motors(left_new_speed, right_new_speed):
 
     left_motor_speed = left_new_speed
     right_motor_speed = right_new_speed
-    left_motor_setting = convert_speed_to_duty(left_motor_speed, 23.912102546048775)
-    right_motor_setting = convert_speed_to_duty(right_motor_speed, -22.727054005733176)
+    left_motor_setting = convert_speed_to_duty(left_motor_speed, 21.924028091423587)
+    right_motor_setting = convert_speed_to_duty(right_motor_speed, -20.9995597347149)
     leftServo.set(left_motor_setting)
     rightServo.set(right_motor_setting)
 
@@ -265,8 +273,8 @@ right_prev_error = 0
 right_integral_error = 0
 
 # Characterizations
-# Right max Speed: 22.727054005733176 cm / s
-# Left max Speed: 23.912102546048775 cm / s
+# Right max Speed: 20.9995597347149 cm / s
+# Left max Speed: 21.924028091423587 cm / s
 # Wheel Circumference: 21.7 cm
 
 # Main control loop
@@ -281,7 +289,13 @@ while True:
     elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
         print("STARTING")
-        update_motors(20, 20)
+        update_motors(18, 18)
+
+    elif state_color == "black" and state_color != control_current_state:
+        print("This probably shouldn't happen...")
+        print("stopping everything safely")
+        break
+
     #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
 
     # Get Readings from encoders for comparison
@@ -301,7 +315,7 @@ while True:
             error = calculate_error(speed, left_motor_speed)
             print("Left Speed: {}, Left Setting: {}, Left Error: {}".format(speed, left_motor_setting, error))
             # Control
-            left_motor_setting = pid_control(1, 0, 0, error, left_motor_setting, 23.912102546048775, 0)
+            left_motor_setting = pid_control(1, 0, 0, error, left_motor_setting, 21.924028091423587, 0)
             leftServo.set(left_motor_setting)
 
     if right_state != right_reading:
@@ -312,7 +326,7 @@ while True:
             speed = calculate_speed(right_tPrev, right_tNow)
             error = calculate_error(speed, right_motor_speed)
             print("Right Speed: {}, Right Setting: {} Right Error: {}".format(speed, right_motor_setting, error))
-            right_motor_setting = pid_control(1, 0, 0, error, right_motor_setting, -22.727054005733176, 1)
+            right_motor_setting = pid_control(1, 0, 0, error, right_motor_setting, -20.9995597347149, 1)
             rightServo.set(right_motor_setting)
 
 
