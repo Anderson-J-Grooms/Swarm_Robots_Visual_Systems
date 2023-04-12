@@ -18,12 +18,12 @@ from colorCheck import *
 def cutoff(servo, bounded_setting):
     if servo:
         if bounded_setting > 0.0:
-            return 0.0
+            return -0.05
         else:
             return bounded_setting
     else:
         if bounded_setting < 0.0:
-            return 0.0
+            return 0.05
         else:
             return bounded_setting
 
@@ -226,11 +226,9 @@ clk0 = leftServo.start(period)
 clk1 = rightServo.start(period)
 
 # We wait for a short amount of time while sending 0.0 pulse
-# before sending the real setting
+# before jumping in to the control loop
 print("Press enter to continue")
 input()
-leftServo.set(left_motor_setting)
-rightServo.set(right_motor_setting)
 
 # Function that takes a new speed for the two motor
 # and updates the necessary variables
@@ -281,15 +279,23 @@ right_integral_error = 0
 while True:
     # Take a color reading and decide if we are changing states
     state_color = get_color()
-    if state_color == "white" and state_color != control_current_state:
+    if state_color == "red" and state_color != control_current_state:
         control_current_state = state_color
         print("STOPPING")
         update_motors(0, 0)
 
-    elif state_color == "magenta" and state_color != control_current_state:
+    elif state_color == "green" and state_color != control_current_state:
         control_current_state = state_color
         print("STARTING")
         update_motors(18, 18)
+
+    elif state_color == "white" and state_color != control_current_state:
+        control_current_state = state_color
+        print("Turning Left")
+        v1 = left_motor_speed
+        v2 = turn_at_radius(15, v1)
+        print("Turning Wheel Speeds: Left ({}) Right ({})".format(v1, v2))
+        update_motors(v1, v2)
 
     elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
