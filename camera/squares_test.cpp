@@ -7,6 +7,8 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
+#include "opencv2/calib3d.hpp"
+#include "opencv2/opencv.hpp"
 
 #include <iostream>
 
@@ -45,40 +47,14 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
 {
     squares.clear();
 
-    Mat pyr, timg, gray0(image.size(), CV_8U), gray;
+    Mat pyr, timg, gray, gray0;
 
     // down-scale and upscale the image to filter out the noise
     pyrDown(image, pyr, Size(image.cols/2, image.rows/2));
     pyrUp(pyr, timg, image.size());
     vector<vector<Point> > contours;
-
-    // find squares in every color plane of the image
-    for( int c = 0; c < 3; c++ )
-    {
-        int ch[] = {c, 0};
-        mixChannels(&timg, 1, &gray0, 1, ch, 1);
-
-        // try several threshold levels
-        for( int l = 0; l < N; l++ )
-        {
-            // hack: use Canny instead of zero threshold level.
-            // Canny helps to catch squares with gradient shading
-            if( l == 0 )
-            {
-                // apply Canny. Take the upper threshold from slider
-                // and set the lower to 0 (which forces edges merging)
-                Canny(gray0, gray, 0, thresh, 5);
-                // dilate canny output to remove potential
-                // holes between edge segments
-                dilate(gray, gray, Mat(), Point(-1,-1));
-            }
-            else
-            {
-                // apply threshold if l!=0:
-                //     tgray(x,y) = gray(x,y) < (l+1)*255/N ? 255 : 0
-                gray = gray0 >= (l+1)*255/N;
-            }
-
+        cvtColor(image, gray0, COLOR_BGR2HSV);
+        inRange(gray0, Scalar(0,0,0), Scalar(180,255,50), gray);
             // find contours and store them all as a list
             findContours(gray, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
@@ -105,7 +81,7 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
 
                     for( int j = 2; j < 5; j++ )
                     {
-                        // find the maximum cosine of the angle between joint edges
+                        // find the maximum cosine of the angle 
                         double cosine = fabs(angle(approx[j%4], approx[j-2], approx[j-1]));
                         maxCosine = MAX(maxCosine, cosine);
                     }
@@ -113,27 +89,133 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
                     // if cosines of all angles are small
                     // (all angles are ~90 degree) then write quandrange
                     // vertices to resultant sequence
-                    if( maxCosine < 0.3 )
+                    if( maxCosine < 0.3 ) {
                         squares.push_back(approx);
+                        break;
+                    }
+                    
                 }
             }
         }
-    }
-}
+
+
 
 int main(int argc, char** argv)
 {
-        VideoCapture capture(0);
+    vector<Point3f> objectPoints;
+    vector<Point2f> imagePoints;
+    Mat reversedImagePoints;
+
+
+    objectPoints.push_back(Point3f(-4.9,-4.9,0));
+    objectPoints.push_back(Point3f(-4.9,4.9,0));
+    objectPoints.push_back(Point3f(4.9,-4.9,0));
+    objectPoints.push_back(Point3f(4.9,4.9,0));
+    
+    Mat cameraMatrix = Mat::eye(3,3, CV_64F);
+    
+    cameraMatrix.at<double>(0,0) = 730;
+    cameraMatrix.at<double>(1,1) = 730;
+    cameraMatrix.at<double>(0,2) = 320;
+    cameraMatrix.at<double>(1,2) = 240;
+    
+    Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
+    distCoeffs.at<double>(0, 0) = 0;//33.6;
+    distCoeffs.at<double>(0, 1) = 0;//-2.9;
+    distCoeffs.at<double>(0, 2) = 0;
+    distCoeffs.at<double>(0, 3) = 0;
+    distCoeffs.at<double>(0, 4) = 0;//21.5;
+    
+    Mat rvec, tvec;
 	Mat image;
-	capture >> image;
+    vector<vector<Point> > squares;
+    
+    //--- INITIALIZE VIDEOCAPTURE
+    VideoCapture cap;
+    // open the default camera using default API
+    // cap.open(0);
+    // OR advance usage: select any API backend
+    int deviceID = 0;             // 0 = open default camera
+    int apiID = cv::CAP_ANY;      // 0 = autodetect default API
+    // open selected camera using selected API
+    cap.open(deviceID, apiID);
+    // check if we succeeded
+    if (!cap.isOpened()) {
+        cerr << "ERROR! Unable to open camera\n";
+        return -1;
+    }
+    int c = 0;
+    cout << "Start grabbing" << endl
+        << "Press any key to terminate" << endl;
+    for (;;)
+    {
+        c++;
+        if (c % 100) { 
+            c = 0;
+        // wait for a new frame from camera and store it into 'frame'
+        cap.read(image);
+        // check if we succeeded
+        if (image.empty()) {
+            cerr << "ERROR! blank frame grabbed\n";
+            break;
+        }
+    findSquares(image, squares);
+    if (squares.size() != 0) {
+    for( int i = 0; i < 1; i++)
+    {
+        imagePoints.clear();
+        polylines(image, squares[i], true, Scalar(0, 255, 0), 3, LINE_AA);
+        for( int j = 0; j < 4; j++)
+        {
+            circle(image, squares[i][j], 1, Scalar(255,0,0), -1);
+            imagePoints.push_back(squares[i][j]);
+        }
+        sort(imagePoints.begin(), imagePoints.end(), [](const Point2f &a,const Point2f &b) {
+            return (a.x < b.x );
+            });
+            
+        sort(imagePoints.begin(), imagePoints.begin() + 2, [](const Point2f &a,const Point2f &b) {
+            return (a.y < b.y );
+            });
+        sort(imagePoints.begin() + 2 , imagePoints.end(), [](const Point2f &a,const Point2f &b) {
+            return (a.y < b.y );
+            });
 
-        vector<vector<Point> > squares;
-        findSquares(image, squares);
 
-        polylines(image, squares, true, Scalar(0, 255, 0), 3, LINE_AA);
-        imshow(wndname, image);
+        solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
+        double distance = norm(tvec);
+        projectPoints(objectPoints, rvec, tvec, cameraMatrix,distCoeffs,reversedImagePoints);
+        double theta0 = atan(tvec.at<double>(0,0) / tvec.at<double>(0,2));
+      //  double theta1 = norm(rvec);
+        Mat rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz;
+        Rodrigues(rvec, rotation_matrix);
+        RQDecomp3x3(rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz);
 
-        imwrite("result.png", image);
+
+        double thetay1 = asin(Qy.at<double>(0,2));
+
+
+        //double roll, pitch, yaw;
+        //roll = atan2(rotation_matrix.at<double>(2,1), rotation_matrix.at<double>(2,2));
+        //pitch = atan2(-rotation_matrix.at<double>(2,0), sqrt(pow(rotation_matrix.at<double>(2,1),2) + pow(rotation_matrix.at<double>(2,2),2)));
+        //yaw = atan2(rotation_matrix.at<double>(1,0), rotation_matrix.at<double>(0,0));
+            cout << "distance" << distance << endl;
+
+
+        //    cout << "Roll: " << roll * 180 / CV_PI << endl;
+        //    cout << "pitch: " << pitch * 180 / CV_PI << endl;
+          //  cout << "Yaw: " << yaw * 180 / CV_PI << endl;
+           cout << "angle 0: " << theta0  * 180 / CV_PI << endl;
+            cout << "angle 1: " << thetay1 * 180 / CV_PI << endl;
+
+
+    }
+}
+    imshow(wndname, image);
+    if (waitKey(5) >= 0)
+            break;
+    }
+}
     return 0;
 }
 
