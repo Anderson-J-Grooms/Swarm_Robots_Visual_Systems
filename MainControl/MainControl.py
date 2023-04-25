@@ -74,8 +74,8 @@ def calculate_error(measured_speed, ideal_speed):
     return (ideal_speed - measured_speed)
 
 # Simple function for calculating the integral of the error
-def calculate_ierror(integral_error, curr_error):
-    return (integral_error + curr_error)
+def calculate_ierror(integral_error, curr_error, tPrev, tNow):
+    return ((integral_error + curr_error) * (tNow - tPrev))
 
 # Simple function for calculating the derivative of the error
 def calculate_derror(curr_error, prev_error, tPrev, tNow):
@@ -293,6 +293,7 @@ while True:
     # Take a color reading and decide if we are changing states
     state_color = get_color()
     if state_color != control_current_state:
+        print("STATE CHANGE: {}".format(state_color))
         update_motors(0, 0)
         time.sleep(.5)
         state_color = get_color()
@@ -353,14 +354,13 @@ while True:
             speed = calculate_speed(left_tPrev, left_tNow)
             left_prev_error = left_curr_error
             left_curr_error = calculate_error(speed, left_motor_speed)
-            left_integral_error = calculate_ierror(left_integral_error, left_curr_error)
+            left_integral_error = calculate_ierror(left_integral_error, left_curr_error, left_tPrev, left_tNow)
             left_derivative_error = calculate_derror(left_curr_error, left_prev_error, left_tPrev, left_tNow)
             print("Left Speed: {}, Left Setting: {}, Left Error: {}, Left Ierror: {} Left Derror: {}".format(speed, left_motor_setting, left_curr_error, left_integral_error, left_derivative_error))
-            
             # Control
-            left_motor_setting = pid_control(.5, 0, 0, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
-            #left_motor_setting = pid_control(1, 1, 1, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
-            leftServo.set(left_motor_setting)
+            left_motor_setting = pid_control(0.5, 1, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+            #left_motor_setting = pid_control(0.8833, 1.408, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+            #left_motor_setting = pid_control(.1, .2, .01, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
             leftServo.set(left_motor_setting)
 
     if right_state != right_reading:
@@ -372,14 +372,13 @@ while True:
             speed = calculate_speed(right_tPrev, right_tNow)
             left_prev_error = left_curr_error
             right_curr_error = calculate_error(speed, right_motor_speed)
-            right_integral_error = calculate_ierror(right_integral_error, right_curr_error)
+            right_integral_error = calculate_ierror(right_integral_error, right_curr_error, right_tPrev, right_tNow)
             right_derivative_error = calculate_derror(right_curr_error, right_prev_error, right_tPrev, right_tNow)
             print("Right Speed: {}, Right Setting: {}, Right Error: {}, Right Ierror: {} Right Derror: {}".format(speed, right_motor_setting, right_curr_error, right_integral_error, right_derivative_error))
             
-            
-            right_motor_setting = pid_control(.5, 0, 0, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
-            rightServo.set(right_motor_setting)
-            #right_motor_setting = pid_control(.25, .0009, 0.0002, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+            right_motor_setting = pid_control(0.5, 1, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+            #right_motor_setting = pid_control(0.8833, 1.408, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+            #right_motor_setting = pid_control(.1, .2, .01, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
             rightServo.set(right_motor_setting)
 
 
