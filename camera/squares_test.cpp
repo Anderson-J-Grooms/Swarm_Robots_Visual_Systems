@@ -11,6 +11,11 @@
 #include "opencv2/opencv.hpp"
 
 #include <iostream>
+#include <cstdlib>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <wiringSerial.h>
 
 using namespace cv;
 using namespace std;
@@ -43,10 +48,9 @@ static double angle( Point pt1, Point pt2, Point pt0 )
 }
 
 // returns sequence of squares detected on the image.
-static void findSquares( const Mat& image, vector<vector<Point> >& squares )
+static void findSquares( const Mat& image, vector<vector<Point> >& squares, const int color)
 {
     squares.clear();
-
     Mat pyr, timg, gray, gray0;
 
     // down-scale and upscale the image to filter out the noise
@@ -54,7 +58,15 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
     pyrUp(pyr, timg, image.size());
     vector<vector<Point> > contours;
         cvtColor(image, gray0, COLOR_BGR2HSV);
-        inRange(gray0, Scalar(0,0,0), Scalar(180,255,50), gray);
+        if (color == 0) {
+            inRange(gray0, Scalar(61,31,68), Scalar(112,193,163), gray); //blue
+        } else if (color == 1) {
+             inRange(gray0, Scalar(38,42,44), Scalar(95,146,170), gray); // green
+        } else if (color == 2) {
+            inRange(gray0, Scalar(0,102,70), Scalar(19,255,255), gray); // red
+        } else {
+            return;
+        }
             // find contours and store them all as a list
             findContours(gray, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
@@ -81,7 +93,7 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
 
                     for( int j = 2; j < 5; j++ )
                     {
-                        // find the maximum cosine of the angle 
+                    // find the maximum cosine of the angle 
                         double cosine = fabs(angle(approx[j%4], approx[j-2], approx[j-1]));
                         maxCosine = MAX(maxCosine, cosine);
                     }
@@ -105,7 +117,9 @@ int main(int argc, char** argv)
     vector<Point3f> objectPoints;
     vector<Point2f> imagePoints;
     Mat reversedImagePoints;
-
+    string color;
+    string line;
+	//stringstream call_line;
 
     objectPoints.push_back(Point3f(-4.9,-4.9,0));
     objectPoints.push_back(Point3f(-4.9,4.9,0));
@@ -152,70 +166,86 @@ int main(int argc, char** argv)
         c++;
         if (c % 100) { 
             c = 0;
-        // wait for a new frame from camera and store it into 'frame'
-        cap.read(image);
-        // check if we succeeded
-        if (image.empty()) {
-            cerr << "ERROR! blank frame grabbed\n";
-            break;
-        }
-    findSquares(image, squares);
-    if (squares.size() != 0) {
-    for( int i = 0; i < 1; i++)
-    {
-        imagePoints.clear();
-        polylines(image, squares[i], true, Scalar(0, 255, 0), 3, LINE_AA);
-        for( int j = 0; j < 4; j++)
-        {
-            circle(image, squares[i][j], 1, Scalar(255,0,0), -1);
-            imagePoints.push_back(squares[i][j]);
-        }
-        sort(imagePoints.begin(), imagePoints.end(), [](const Point2f &a,const Point2f &b) {
-            return (a.x < b.x );
-            });
-            
-        sort(imagePoints.begin(), imagePoints.begin() + 2, [](const Point2f &a,const Point2f &b) {
-            return (a.y < b.y );
-            });
-        sort(imagePoints.begin() + 2 , imagePoints.end(), [](const Point2f &a,const Point2f &b) {
-            return (a.y < b.y );
-            });
+			// wait for a new frame from camera and store it into 'frame'
+			cap.read(image);
+			// check if we succeeded
+			if (image.empty()) {
+				cerr << "ERROR! blank frame grabbed\n";
+				break;
+			}
+			findSquares(image, squares, 0);
+			color = "blue";
+			if (squares.size() == 0) {
+				findSquares(image, squares, 1);
+				color = "green";
+			}
+			if (squares.size() == 0) {
+				findSquares(image, squares, 2);
+				color = "red";
+			}
+			if (squares.size() != 0) {
+				for( int i = 0; i < 1; i++)
+				{
+					imagePoints.clear();
+					polylines(image, squares[i], true, Scalar(0, 255, 0), 3, LINE_AA);
+					for( int j = 0; j < 4; j++)
+					{
+						circle(image, squares[i][j], 1, Scalar(255,0,0), -1);
+						imagePoints.push_back(squares[i][j]);
+					}
+					sort(imagePoints.begin(), imagePoints.end(), [](const Point2f &a,const Point2f &b) {
+						return (a.x < b.x );
+						});
+						
+					sort(imagePoints.begin(), imagePoints.begin() + 2, [](const Point2f &a,const Point2f &b) {
+						return (a.y < b.y );
+						});
+					sort(imagePoints.begin() + 2 , imagePoints.end(), [](const Point2f &a,const Point2f &b) {
+						return (a.y < b.y );
+						});
+					solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
+					double distance = norm(tvec);
+					projectPoints(objectPoints, rvec, tvec, cameraMatrix,distCoeffs,reversedImagePoints);
+					double theta0 = atan(tvec.at<double>(0,0) / tvec.at<double>(0,2));
+				  //  double theta1 = norm(rvec);
+					Mat rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz;
+					Rodrigues(rvec, rotation_matrix);
+					RQDecomp3x3(rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz);
+					double theta1 = asin(Qy.at<double>(0,2));
 
+					//double roll, pitch, yaw;
+					//roll = atan2(rotation_matrix.at<double>(2,1), rotation_matrix.at<double>(2,2));
+					//pitch = atan2(-rotation_matrix.at<double>(2,0), sqrt(pow(rotation_matrix.at<double>(2,1),2) + pow(rotation_matrix.at<double>(2,2),2)));
+					//yaw = atan2(rotation_matrix.at<double>(1,0), rotation_matrix.at<double>(0,0));
+					//cout << "distance" << distance << endl;
+					//cout << "angle 0: " << theta0  * 180 / CV_PI << endl;
+					//cout << "angle 1: " << theta1 * 180 / CV_PI << endl;
+					//cout << "color: " << color << endl;
+					string pd = to_string(distance);
+					string pa0 =  to_string(theta0 * 180 / CV_PI);
+					string pa1 =  to_string(theta1 * 180 / CV_PI);
+					string pc =  color;
+                    string call_line = "echo \"" + pd + "," + pa0 + "," + pa1 + "," + pc + "\n\" > /dev/ttyAMA0 \n";
+                   // call_line << "echo \"" << pd << "\n\" > /dev/ttyAMA0" << endl;
+                    system(call_line.c_str());
+                    
 
-        solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
-        double distance = norm(tvec);
-        projectPoints(objectPoints, rvec, tvec, cameraMatrix,distCoeffs,reversedImagePoints);
-        double theta0 = atan(tvec.at<double>(0,0) / tvec.at<double>(0,2));
-      //  double theta1 = norm(rvec);
-        Mat rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz;
-        Rodrigues(rvec, rotation_matrix);
-        RQDecomp3x3(rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz);
+					//serialPuts(serial_port, pd.c_str());
+					//serialPuts(serial_port, pa0.c_str());
+					//serialPuts(serial_port, pa1.c_str());
+					//serialPuts(serial_port, pc.c_str());
 
-
-        double thetay1 = asin(Qy.at<double>(0,2));
-
-
-        //double roll, pitch, yaw;
-        //roll = atan2(rotation_matrix.at<double>(2,1), rotation_matrix.at<double>(2,2));
-        //pitch = atan2(-rotation_matrix.at<double>(2,0), sqrt(pow(rotation_matrix.at<double>(2,1),2) + pow(rotation_matrix.at<double>(2,2),2)));
-        //yaw = atan2(rotation_matrix.at<double>(1,0), rotation_matrix.at<double>(0,0));
-            cout << "distance" << distance << endl;
-
-
-        //    cout << "Roll: " << roll * 180 / CV_PI << endl;
-        //    cout << "pitch: " << pitch * 180 / CV_PI << endl;
-          //  cout << "Yaw: " << yaw * 180 / CV_PI << endl;
-           cout << "angle 0: " << theta0  * 180 / CV_PI << endl;
-            cout << "angle 1: " << thetay1 * 180 / CV_PI << endl;
-
-
-    }
-}
-    imshow(wndname, image);
-    if (waitKey(5) >= 0)
-            break;
-    }
-}
-    return 0;
+					cv::putText(image, pd, cv::Point(10, 15), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+					cv::putText(image, pa0, cv::Point(10, 35), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+					cv::putText(image, pa1, cv::Point(10, 55), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+					cv::putText(image, pc, cv::Point(10, 75), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+					}
+			}
+			imshow(wndname, image);
+			if (waitKey(5) >= 0)
+					break;
+		}
+	}
+	return 0;
 }
 

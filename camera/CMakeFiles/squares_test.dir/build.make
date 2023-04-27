@@ -87,6 +87,7 @@ squares_test: /usr/local/lib/libopencv_photo.so.4.7.0
 squares_test: /usr/local/lib/libopencv_stitching.so.4.7.0
 squares_test: /usr/local/lib/libopencv_video.so.4.7.0
 squares_test: /usr/local/lib/libopencv_videoio.so.4.7.0
+squares_test: /usr/lib/libwiringPi.so
 squares_test: /usr/local/lib/libopencv_imgcodecs.so.4.7.0
 squares_test: /usr/local/lib/libopencv_dnn.so.4.7.0
 squares_test: /usr/local/lib/libopencv_calib3d.so.4.7.0

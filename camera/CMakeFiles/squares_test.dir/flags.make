@@ -6,5 +6,5 @@ CXX_FLAGS =
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -isystem /usr/local/include/opencv4 
+CXX_INCLUDES = -I/home/pi/Swarm_Robots_Visual_Systems/camera/. -isystem /usr/local/include/opencv4 
 
