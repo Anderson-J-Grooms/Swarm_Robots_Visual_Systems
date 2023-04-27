@@ -6,8 +6,9 @@
 #include <rc/time.h>
 #include <time.h>
 
-#define AIN0 3
-#define AIN1 4
+#define CHIP 1
+#define IN_PIN0 25
+#define IN_PIN1 17
 
 enum state 
 {
@@ -137,15 +138,11 @@ void get_error(struct wheel_control *wheel)
  */
 bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_wheel)
 {
-    // Analog input pins
-    // int AIN0 = 3;
-    // int AIN1 = 4;
-
     bool update = false; // Return so we know if there were any changes.
 
     // Read values from ADC
-    enum state leftReading = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
-    enum state rightReading = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
+    enum state leftReading = (rc_adc_read_raw(IN_PIN0) >= left_wheel->threshold) ? HIGH : LOW;
+    enum state rightReading = (rc_adc_read_raw(IN_PIN1) >= right_wheel->threshold) ? HIGH : LOW;
     // Compare to previous values
     // if the new values read from the adc are on the opposite side of the threshold and we have gone one unit in distance
     // update the speed and error
@@ -153,11 +150,11 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
     { 
 	    // Debounce in a way
         rc_usleep(10);
-	    leftReading = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
+	    leftReading = (rc_adc_read_raw(IN_PIN0) >= left_wheel->threshold) ? HIGH : LOW;
 	
         if (leftReading != left_wheel->current_state)
 	    {
-		    left_wheel->current_state = leftReading;
+		left_wheel->current_state = leftReading;
 
         	left_wheel->time_0 = left_wheel->time_1;
        		left_wheel->time_1 = clock();
@@ -172,11 +169,11 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
     {
      	// Debounce in a way
         rc_usleep(10);
-	    rightReading = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
+	    rightReading = (rc_adc_read_raw(IN_PIN1) >= right_wheel->threshold) ? HIGH : LOW;
 	
         if (rightReading != right_wheel->current_state)
 	    {
-		    right_wheel->current_state = rightReading;
+		right_wheel->current_state = rightReading;
         
         	right_wheel->time_0 = right_wheel->time_1;
         	right_wheel->time_1 = clock();
@@ -198,10 +195,6 @@ bool read_ADC(struct wheel_control *left_wheel, struct wheel_control *right_whee
  */
 void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_wheel)
 {
-    // Analog input pins
-    // int AIN0 = 3;
-    // int AIN1 = 4;
-    
     // These values are not correct nor good attempts at being close
     left_wheel->p = 0.9;
     left_wheel->i = 0.4;
@@ -213,7 +206,7 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
 
     // This is the value that will determine whether the encoder is sending a high or low signal
     left_wheel->threshold = 2700;
-    right_wheel->threshold = 2700;
+    right_wheel->threshold = 3200;
 
     // The integral of the area before we start is zero
     left_wheel->i_error = 0.0;
@@ -224,8 +217,8 @@ void init_pid(struct wheel_control *left_wheel, struct wheel_control *right_whee
     right_wheel->pin = 1;
 
     // Current states of the wheel encoders for initializing the variables
-    left_wheel->current_state = (rc_adc_read_raw(AIN0) >= left_wheel->threshold) ? HIGH : LOW;
-    right_wheel->current_state = (rc_adc_read_raw(AIN1) >= right_wheel->threshold) ? HIGH : LOW;
+    // left_wheel->current_state = (rc_adc_read_raw(IN_PIN0) >= left_wheel->threshold) ? HIGH : LOW;
+    // right_wheel->current_state = (rc_adc_read_raw(IN_PIN1) >= right_wheel->threshold) ? HIGH : LOW;
 
     left_wheel->start_state = left_wheel->current_state;
     right_wheel->start_state = right_wheel->current_state;
@@ -281,84 +274,58 @@ void output_data(struct wheel_control *wheel)
 
 int main(int argc, char *argv[]) 
 {
-    // Analog input pins
-    // int AIN0 = 3;
-    // int AIN1 = 4;
     
     // Create the structs for controlling the motors
     struct wheel_control left_wheel;
     struct wheel_control right_wheel;
 
-    // Initialize the ADC and SERVO
-    rc_adc_init();
-    // if(rc_servo_init() == -1)
-    // {
-    //     printf("Error: Failed to initialized Servos.");
-    //     return 1;
-    // }
-    // rc_servo_power_rail_en(1);
+    // Initialize the PIN and SERVO
+    rc_gpio_init(CHIP, IN_PIN0, GPIOHANDLE_REQUEST_INPUT);
+    rc_gpio_init(CHIP, IN_PIN1, GPIOHANDLE_REQUEST_INPUT); 
+    if(rc_servo_init() == -1)
+     {
+         printf("Error: Failed to initialized Servos.");
+         return 1;
+     }
+     rc_servo_power_rail_en(1);
 
     // We need to ensure that the structs have the data for each respective wheel.
     init_pid(&left_wheel, &right_wheel); // Sets the pid values for each wheel and the time_0 for each wheel;
 
-    // Set time for the loop to run
-    //    long long int time;
-    //    if (argc > 1) 
-    //    {
-    //	    time = atoi(argv[1]);
-    //    }
-    //    else 
-    //    {
-    //	    time = 100000000000; // 100,000,000,000 == 100 seconds give or take
-    //    }
-    //
     // We need an initial speed to set the motors to and a goal to calculate error from
     // set_speed(2, &left_wheel);
     // set_speed(2, &right_wheel);
     // for(;;)
     // {
     //     read_ADC(&left_wheel, &right_wheel);
-	//     printf("Left Wheel Reading %d, State: %d", rc_adc_read_raw(AIN0), left_wheel.current_state);
-    //     printf(" Right Wheel Reading %d, State: %d\n", rc_adc_read_raw(AIN1), right_wheel.current_state);
     //    // set_motor(&left_wheel);
     //    // set_motor(&right_wheel);
     //    // rc_usleep(1000000/50);    
     // }
     
     // CONFIGURATION LOOP
-    set_speed(1.5, &left_wheel);
+    set_speed(1, &left_wheel);
+    set_speed(1, &right_wheel);
     for(;;)
     {
         // Use to find threshold and ensure encoders are labeled properly in code
-        // printf("Left Wheel Reading: %d\nRight Wheel Reading: %d\n", rc_adc_read_raw(AIN0), rc_adc_read_raw(AIN1));
+        // printf("Left Wheel Reading: %d\nRight Wheel Reading: %d\n", rc_adc_read_raw(IN_PIN0), rc_adc_read_raw(IN_PIN1));
 
         // Needs the Threshold set first
-        if(read_ADC(&left_wheel, &right_wheel))
-        {
+        //if(read_ADC(&left_wheel, &right_wheel))
+        //{
             // pid_control(&left_wheel); // Update motor PWM setting
             // pid_control(&right_wheel);
             // output_data(&left_wheel);
             // output_date(&right_wheel);
-        }
-        printf("ADC PIN: %d, READING: %f ", AIN0, rc_adc_read_volt(AIN0));
-        printf("ADC PIN: %d, READING: %f\n", AIN1, rc_adc_read_volt(AIN1));
-        rc_usleep(100000);
+        //}
+	// read_ADC(&left_wheel, &right_wheel);
+	printf("L: %f, R: %f\n", left_wheel.motor_setting, right_wheel.motor_setting);
+        set_motor(&left_wheel);
+	set_motor(&right_wheel);
+	rc_usleep(10000);
     }
 
-    // CONTROL LOOP
-    // // Poll The adc and wait for a change
-    // while(time > 0)
-    // {
-    //     if(read_ADC(&left_wheel, &right_wheel)) // Reads the ADC and updates the state and time of that change
-    //     {
-    //         pid_control(&left_wheel); // Update motor PWM setting
-    //         pid_control(&right_wheel);
-    //     }
-
-    //     output_data(&left_wheel);
-    //     output_data(&right_wheel);
-	//     time--;
-    // }
     rc_servo_cleanup();
 }
 
