@@ -5,7 +5,7 @@
 #include <rc/adc.h>
 #include <rc/time.h>
 #include <time.h>
-#include <encodercontrol_export.h>
+#include "encodercontrol_export.h"
 
 #define CHIP 1
 #define IN_PIN0 25
@@ -13,23 +13,28 @@
 
 /**
  * @brief Set the motor PWM setting. This should be called from the control loop to allow for pid_control to update the setting.
- * 
+ *  Since the right servo motor is facing the opposite direction we flip the sign of the motor setting on pin 8.
  * @param wheel The wheel to set
  * @return int Returns 0 on success and 1 if failure
  */
 int set_motor(int pin, double motor_setting)
 {
+
+    if(pin == 1)
+    {
+        printf("MotorSettingInternal: %f\n", -motor_setting);
+    	return rc_servo_send_pulse_normalized(pin, -motor_setting);
+    }
     return rc_servo_send_pulse_normalized(pin, motor_setting);
 }
 
 void init_control()
 {
-    rc_gpio_init(CHIP, IN_PIN0, GPIOHANDLE_REQUEST_INPUT);
-    rc_gpio_init(CHIP, IN_PIN1, GPIOHANDLE_REQUEST_INPUT); 
+    // rc_gpio_init(CHIP, IN_PIN0, GPIOHANDLE_REQUEST_INPUT);
+    // rc_gpio_init(CHIP, IN_PIN1, GPIOHANDLE_REQUEST_INPUT); 
     if(rc_servo_init() == -1)
     {
          printf("Error: Failed to initialized Servos.");
-         return 1;
     }
     rc_servo_power_rail_en(1);
 }
