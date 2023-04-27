@@ -1,4 +1,8 @@
 import time
+
+import Adafruit_BBIO.UART as UART
+import serial
+from time import sleep
 import rcpy.servo as servo
 import rcpy.gpio as gpio
 
@@ -290,6 +294,15 @@ right_derivative_error = 0
 
 # Main control loop
 while True:
+
+    UART.setup("UART1")
+
+    ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200)
+    ser.open()
+    data = ser.readline()
+    cameraData = data.decode('utf-8').split(',')
+    print(cameraData)
+
     # Take a color reading and decide if we are changing states
     state_color = get_color()
     if state_color != control_current_state:

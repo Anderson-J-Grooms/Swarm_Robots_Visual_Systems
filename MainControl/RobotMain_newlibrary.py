@@ -51,7 +51,7 @@ right_motor_speed = 20 # cm/s
 right_motor_setting = convert_speed_to_duty(right_motor_speed, -22.727054005733176)
 
 # Set up clocks to periodically update the motors
-period = 0.02
+period = 0.01
 leftServo.set(0.0)
 rightServo.set(0.0)
 clk0 = leftServo.start(period)
@@ -60,9 +60,8 @@ clk1 = rightServo.start(period)
 # We wait for a short amount of time while sending 0 pulse
 # before sending the real setting
 time.sleep(1) 
-leftServo.set(1)
-rightServo.set(-1)
-
+leftServo.set(left_motor_setting)
+rightServo.set(right_motor_setting)
 # Time variables
 left_tPrev = time.time()
 left_tNow = left_tPrev
@@ -86,12 +85,7 @@ right_integral_error = 0
 # Characterizations
 # Right max Speed: 22.727054005733176 cm / s
 # Left max Speed: 23.912102546048775 cm / s
-# Wheel Circumference: 21.7 cm
-
-left_max = 0
-right_max = 0
-
-wait_a_few_loops = 0
+# Wheel Circumference: 21.7
 
 while True:
     # Get Readings from encoders for comparison
@@ -109,11 +103,12 @@ while True:
             # Calculate Speed and error
             speed = calculate_speed(left_tPrev, left_tNow)
             error = calculate_error(speed, left_motor_speed)
-            left_max = speed if speed > left_max and wait_a_few_loops > 100  else left_max
-            print("Left Speed: {}, Left Setting: {}, Left Error: {}, Left Max: {}".format(speed, left_motor_setting, error, left_max))
+
+            print("Left Speed: {}, Left Setting: {}, Left Error: {}".format(speed, left_motor_setting, error))
             # Control
-            # left_motor_setting = pid_control(1, 0, 0, left_motor_speed, speed, left_motor_setting, 23.912102546048775)
-            # leftServo.set(left_motor_setting)
+            left_motor_setting = pid_control(1, 0, 0, left_motor_speed, speed, left_motor_setting, 23.912102546048775)
+            leftServo.set(left_motor_setting)
+
 
     if right_state != right_reading:
         right_state = right_reading
@@ -123,12 +118,9 @@ while True:
             right_tNow = time.time()
             speed = calculate_speed(right_tPrev, right_tNow)
             error = calculate_error(speed, right_motor_speed)
-            right_max = speed if speed > right_max and wait_a_few_loops > 100 else right_max
-            print("Right Speed: {}, Right Setting: {} Right Error: {}, Right Max: {}".format(speed, right_motor_setting, error, right_max))
-            # right_motor_setting = pid_control(1, 0, 0, right_motor_speed, speed, right_motor_setting, -22.727054005733176)
-            # rightServo.set(right_motor_setting)
-
-    wait_a_few_loops = wait_a_few_loops + 1
+            print("Right Speed: {}, Right Setting: {} Right Error: {}".format(speed, right_motor_setting, error))
+            right_motor_setting = pid_control(1, 0, 0, right_motor_speed, speed, right_motor_setting, -22.727054005733176)
+            rightServo.set(right_motor_setting)
 
 clk0.stop()
 clk1.stop()

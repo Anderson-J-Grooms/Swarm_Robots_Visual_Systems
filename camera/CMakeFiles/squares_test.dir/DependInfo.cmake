@@ -4,12 +4,13 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/s22/Git/Swarm_Robots_Visual_Systems/camera/squares_test.cpp" "/home/s22/Git/Swarm_Robots_Visual_Systems/camera/CMakeFiles/squares_test.dir/squares_test.cpp.o"
+  "/home/pi/Swarm_Robots_Visual_Systems/camera/squares_test.cpp" "/home/pi/Swarm_Robots_Visual_Systems/camera/CMakeFiles/squares_test.dir/squares_test.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
+  "."
   "/usr/local/include/opencv4"
   )
 
