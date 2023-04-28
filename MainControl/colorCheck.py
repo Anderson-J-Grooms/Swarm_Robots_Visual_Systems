@@ -3,8 +3,8 @@
 # MSB - Red , Green, LSB - Blue
 def colorCheck(h,s,v) :
 
-   # if (v >= 99) :
-   #     return "white"
+    #if (v >= 99) :
+    #    return "white"
 
     #if (s < 14.5 and v < 60) :
 	#return "black"

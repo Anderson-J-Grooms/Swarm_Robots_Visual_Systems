@@ -1,5 +1,5 @@
-def compileMain():
-     ffibuilder = FFI()
+from cffi import FFI
+ffibuilder = FFI()
 
 # cdef() expects a single string declaring the C types, functions and
 # globals needed to use the shared object. It must be in valid C syntax.
@@ -15,6 +15,5 @@ ffibuilder.set_source("_encodercontrol_cffi",
      #include "encodercontrol.h"   // the C header of the library
 """,
      libraries=['encodercontrol'])   # library name, for the linker
-
-     if __name__ == "__main__":
-          ffibuilder.compile(verbose=True)
+if __name__ == "__main__":
+	ffibuilder.compile(verbose=True)

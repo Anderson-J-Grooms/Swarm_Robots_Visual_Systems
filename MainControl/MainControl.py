@@ -1,4 +1,5 @@
 import time
+
 import Adafruit_BBIO.UART as UART
 import serial
 from time import sleep
@@ -293,6 +294,7 @@ right_derivative_error = 0
 
 # Main control loop
 while True:
+
     UART.setup("UART1")
 
     ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200)
@@ -300,6 +302,7 @@ while True:
     data = ser.readline()
     cameraData = data.decode('utf-8').split(',')
     print(cameraData)
+
     # Take a color reading and decide if we are changing states
     state_color = get_color()
     if state_color != control_current_state:

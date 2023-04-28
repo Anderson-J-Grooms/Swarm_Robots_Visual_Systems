@@ -62,7 +62,6 @@ clk1 = rightServo.start(period)
 time.sleep(1) 
 leftServo.set(left_motor_setting)
 rightServo.set(right_motor_setting)
-
 # Time variables
 left_tPrev = time.time()
 left_tNow = left_tPrev
@@ -86,7 +85,7 @@ right_integral_error = 0
 # Characterizations
 # Right max Speed: 22.727054005733176 cm / s
 # Left max Speed: 23.912102546048775 cm / s
-# Wheel Circumference: 21.7 cm
+# Wheel Circumference: 21.7
 
 while True:
     # Get Readings from encoders for comparison
@@ -104,10 +103,12 @@ while True:
             # Calculate Speed and error
             speed = calculate_speed(left_tPrev, left_tNow)
             error = calculate_error(speed, left_motor_speed)
+
             print("Left Speed: {}, Left Setting: {}, Left Error: {}".format(speed, left_motor_setting, error))
             # Control
             left_motor_setting = pid_control(1, 0, 0, left_motor_speed, speed, left_motor_setting, 23.912102546048775)
             leftServo.set(left_motor_setting)
+
 
     if right_state != right_reading:
         right_state = right_reading

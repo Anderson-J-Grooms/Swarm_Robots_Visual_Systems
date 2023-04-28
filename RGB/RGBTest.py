@@ -32,6 +32,8 @@ first = True
 firstCount = 0
 second = True
 secondCount = 0
+thirdCount=0
+hCount=0
 
 time.sleep(0.5)
 count = 0
@@ -100,9 +102,13 @@ while True:
 			s = 0
 		else:
 			s = (diff / cmax) * 100
-	
 		v = cmax * 100
-
-		out = colorCheck(h,s,v)
-        	print out,' hue: ', round(h, 2),' Sat: ', round(s,2),'Value', round(v,2)
-		time.sleep(2)
+                
+                hCount = hCount+h
+                thirdCount = thirdCount + 1
+                if (thirdCount > 49):
+		    out = colorCheck(hCount/50,s,v)
+                    hCount=0
+                    thirdCount=0
+        	    print out,' hue: ', round(h, 2),' Sat: ', round(s,2),'Value', round(v,2)
+		#time.sleep(2)
