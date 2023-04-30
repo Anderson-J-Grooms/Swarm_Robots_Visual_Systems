@@ -59,11 +59,11 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares, cons
     vector<vector<Point> > contours;
         cvtColor(image, gray0, COLOR_BGR2HSV);
         if (color == 0) {
-            inRange(gray0, Scalar(61,31,68), Scalar(112,193,163), gray); //blue
+            inRange(gray0, Scalar(114,47,65), Scalar(179,255,255), gray); //purple
         } else if (color == 1) {
-             inRange(gray0, Scalar(38,42,44), Scalar(95,146,170), gray); // green
+             inRange(gray0, Scalar(57,64,62), Scalar(137,255,255), gray); // green
         } else if (color == 2) {
-            inRange(gray0, Scalar(0,102,70), Scalar(19,255,255), gray); // red
+            inRange(gray0, Scalar(16,72,61), Scalar(57,193,216), gray); // yellow
         } else {
             return;
         }
@@ -174,14 +174,14 @@ int main(int argc, char** argv)
 				break;
 			}
 			findSquares(image, squares, 0);
-			color = "blue";
+			color = "purple";
 			if (squares.size() == 0) {
 				findSquares(image, squares, 1);
 				color = "green";
 			}
 			if (squares.size() == 0) {
 				findSquares(image, squares, 2);
-				color = "red";
+				color = "yellow";
 			}
 			if (squares.size() != 0) {
 				for( int i = 0; i < 1; i++)
@@ -225,7 +225,7 @@ int main(int argc, char** argv)
 					string pa0 =  to_string(theta0 * 180 / CV_PI);
 					string pa1 =  to_string(theta1 * 180 / CV_PI);
 					string pc =  color;
-                    string call_line = "echo \"" + pd + "," + pa0 + "," + pa1 + "," + pc + "\n\" > /dev/ttyAMA0 \n";
+                    string call_line = "echo \"" + pd + "," + pa0 + "," + pa1 + "," + pc + "\" > /dev/ttyAMA0";
                    // call_line << "echo \"" << pd << "\n\" > /dev/ttyAMA0" << endl;
                     system(call_line.c_str());
                     
