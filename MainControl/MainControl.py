@@ -1,4 +1,6 @@
 import time
+from angleToIntercept import * 
+
 
 import Adafruit_BBIO.UART as UART
 import serial
@@ -318,6 +320,7 @@ while True:
         control_current_state = state_color
         print("STARTING")
         update_motors(16, 16)
+        print(angleToIntercept(cameraData[0], cameraData[1], cameraData[2], 10, 15))
 
     elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
