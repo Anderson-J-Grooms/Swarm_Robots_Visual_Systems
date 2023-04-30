@@ -291,14 +291,12 @@ right_derivative_error = 0
 # Right max Speed: 20.9995597347149 cm / s
 # Left max Speed: 21.924028091423587 cm / s
 # Wheel Circumference: 21.7 cm
+UART.setup("UART1")
 
+ser = serial.Serial(port = "/dev/ttyO1", baudrate=9600) #9600 is baudrate for PI 115200 is for beaglebone
 # Main control loop
 while True:
 
-    UART.setup("UART1")
-
-    ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200)
-    ser.open()
     data = ser.readline()
     cameraData = data.decode('utf-8').split(',')
     print(cameraData)
