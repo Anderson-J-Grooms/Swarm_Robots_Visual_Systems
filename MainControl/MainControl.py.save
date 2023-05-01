@@ -18,11 +18,6 @@ from colorCheck import *
 #             CONTROL FUNCTIONS
 ################################################
 
-def time_to_turn(angle, max_speed):
-    circumference = (12.3 / 2) * 2 * numpy.pi
-    distance = circumference / 360 * angle
-    return distance / max_speed
-
 # A function that cuts off the range so that the wheels only spin
 # forward. It takes a bounded_setting between [-1 1].
 # The right servo is encoded with a 1 and the left with a 0.
@@ -294,16 +289,10 @@ right_curr_error = 0
 right_integral_error = 0
 right_derivative_error = 0
 
-# Chase variables
-chasing = False
-chase_time = 0
-
-
 # Characterizations
 # Right max Speed: 20.9995597347149 cm / s
 # Left max Speed: 21.924028091423587 cm / s
 # Wheel Circumference: 21.7 cm
-# Wheel Base 12.3 cm
 UART.setup("UART1")
 
 ser = serial.Serial(port = "/dev/ttyO1", baudrate=9600) #9600 is baudrate for PI 115200 is for beaglebone
@@ -322,43 +311,32 @@ while True:
         time.sleep(.5)
         state_color = get_color()
 
-    if state_color == "red" and state_color != control_current_state and chasing == False:
+    if state_color == "red" and state_color != control_current_state:
         control_current_state = state_color
         print("STOPPING")
         update_motors(0, 0)
 
-    elif state_color == "yellow" or state_color == "green" and state_color != control_current_state and chasing == False:
+    elif state_color == "green" and state_color != control_current_state:
         control_current_state = state_color
         print("STARTING")
-        update_motors(0,0)
-        print(float(cameraData[0]))
-        if float(cameraData[0]) == 1: 
-            ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), cameraData[4], 10, 15)
-            print("Turning angle {}".format(ang))
-            time = time_to_turn(ang, 16)
-            update_motors(16, -16)
-            time.sleep(time)
-            update_motors(16, 16)
-            chasing = true
-        else:
-            print("Turning")
-            update_motors(5, 0)
+        update_motors(16, 16)
+        print(angleToIntercept(float(cameraData[0]), float(cameraData[1]), float(cameraData[2]), 10, 15))
 
-    elif state_color == "blue" and state_color != control_current_state and chasing == False:
+    elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
         update_motors(5,-5)
         time.sleep(1)
         update_motors(16,16)
-
-    elif state_color == "magenta" and state_color != control_current_state and chasing == False:
+        time.sleep(.5)
+    elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
         update_motors(5, -5)
         time.sleep(1)
         update_motors(16,16)
-
-    elif state_color == "white" and state_color != control_current_state and chasing == False:
+        time.sleep(.5)
+    elif state_color == "white" and state_color != control_current_state:
         control_current_state = state_color
         print("Turning Left")
         v1 = left_motor_speed
@@ -366,18 +344,12 @@ while True:
         print("Turning Wheel Speeds: Left ({}) Right ({})".format(v1, v2))
         update_motors(v1, v2)
 
-    elif state_color == "black" and state_color != control_current_state and chasing == False:
+    elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
         print("stopping everything safely")
         break
 
     #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
-
-    if chasing == True:
-        chasing_time = chasing_time + 1
-
-        if chasing_time > 200:
-            chasing = False
 
     # Get Readings from encoders for comparison
     left_reading = left_encoder.get()
