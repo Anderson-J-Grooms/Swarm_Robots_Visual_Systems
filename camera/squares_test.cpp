@@ -225,7 +225,8 @@ int main(int argc, char** argv)
 					string pa0 =  to_string(theta0 * 180 / CV_PI);
 					string pa1 =  to_string(theta1 * 180 / CV_PI);
 					string pc =  color;
-                    string call_line = "echo \"" + pd + "," + pa0 + "," + pa1 + "," + pc + "\" > /dev/ttyAMA0";
+					string num = to_string(1);
+                    string call_line = "echo \"" + num + "," + pd + "," + pa0 + "," + pa1 + "," + pc + "\" > /dev/ttyAMA0";
                    // call_line << "echo \"" << pd << "\n\" > /dev/ttyAMA0" << endl;
                     system(call_line.c_str());
                     
@@ -241,7 +242,13 @@ int main(int argc, char** argv)
 					cv::putText(image, pc, cv::Point(10, 75), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
 					}
 			}
-			imshow(wndname, image);
+			else
+			{
+				string num = to_string(2);
+				string call_line = "echo \"" + num + "\" > /dev/ttyAMA0";
+				system(call_line.c_str());
+			}
+			// imshow(wndname, image);
 			if (waitKey(5) >= 0)
 					break;
 		}
