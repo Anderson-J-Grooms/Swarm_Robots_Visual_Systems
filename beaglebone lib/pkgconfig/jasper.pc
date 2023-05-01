@@ -1,9 +1,0 @@
-libdir=/usr/local/lib
-includedir=/usr/local/include
-
-Name: JasPer
-Description: Image Processing/Coding Tool Kit with JPEG-2000 Support
-Version: 3.0.6
-
-Libs: -L${libdir} -ljasper
-Cflags: -I${includedir}/jasper -I${includedir}
