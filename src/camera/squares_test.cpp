@@ -59,11 +59,11 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares, cons
     vector<vector<Point> > contours;
         cvtColor(image, gray0, COLOR_BGR2HSV);
         if (color == 0) {
-            inRange(gray0, Scalar(114,47,65), Scalar(179,255,255), gray); //purple
+            inRange(gray0, Scalar(129,62,103), Scalar(179,255,255), gray); //purple
         } else if (color == 1) {
-             inRange(gray0, Scalar(57,64,62), Scalar(137,255,255), gray); // green
+             inRange(gray0, Scalar(57,33,47), Scalar(89,121,204), gray); // green
         } else if (color == 2) {
-            inRange(gray0, Scalar(16,72,61), Scalar(57,193,216), gray); // yellow
+            inRange(gray0, Scalar(22,106,163), Scalar(54,188,255), gray); // yellow
         } else {
             return;
         }
@@ -217,10 +217,10 @@ int main(int argc, char** argv)
 					//roll = atan2(rotation_matrix.at<double>(2,1), rotation_matrix.at<double>(2,2));
 					//pitch = atan2(-rotation_matrix.at<double>(2,0), sqrt(pow(rotation_matrix.at<double>(2,1),2) + pow(rotation_matrix.at<double>(2,2),2)));
 					//yaw = atan2(rotation_matrix.at<double>(1,0), rotation_matrix.at<double>(0,0));
-					//cout << "distance" << distance << endl;
-					//cout << "angle 0: " << theta0  * 180 / CV_PI << endl;
-					//cout << "angle 1: " << theta1 * 180 / CV_PI << endl;
-					//cout << "color: " << color << endl;
+					cout << "distance" << distance << endl;
+					cout << "angle 0: " << theta0  * 180 / CV_PI << endl;
+					cout << "angle 1: " << theta1 * 180 / CV_PI << endl;
+					cout << "color: " << color << endl;
 					string pd = to_string(distance);
 					string pa0 =  to_string(theta0 * 180 / CV_PI);
 					string pa1 =  to_string(theta1 * 180 / CV_PI);
@@ -236,10 +236,10 @@ int main(int argc, char** argv)
 					//serialPuts(serial_port, pa1.c_str());
 					//serialPuts(serial_port, pc.c_str());
 
-					cv::putText(image, pd, cv::Point(10, 15), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
-					cv::putText(image, pa0, cv::Point(10, 35), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
-					cv::putText(image, pa1, cv::Point(10, 55), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
-					cv::putText(image, pc, cv::Point(10, 75), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+				//	cv::putText(image, pd, cv::Point(10, 15), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+				//	cv::putText(image, pa0, cv::Point(10, 35), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+				//	cv::putText(image, pa1, cv::Point(10, 55), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
+				//	cv::putText(image, pc, cv::Point(10, 75), cv::FONT_HERSHEY_DUPLEX, 0.65, CV_RGB(118, 185, 0), 2);
 					}
 			}
 			else

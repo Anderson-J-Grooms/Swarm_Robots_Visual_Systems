@@ -6,19 +6,19 @@
 
 #IncludeRegexTransform: 
 
-/home/pi/Swarm_Robots_Visual_Systems/camera/squares_test.cpp
+/home/pi/Swarm_Robots_Visual_Systems/src/camera/squares_test.cpp
 opencv2/core.hpp
-/home/pi/Swarm_Robots_Visual_Systems/camera/opencv2/core.hpp
+/home/pi/Swarm_Robots_Visual_Systems/src/camera/opencv2/core.hpp
 opencv2/imgproc.hpp
-/home/pi/Swarm_Robots_Visual_Systems/camera/opencv2/imgproc.hpp
+/home/pi/Swarm_Robots_Visual_Systems/src/camera/opencv2/imgproc.hpp
 opencv2/imgcodecs.hpp
-/home/pi/Swarm_Robots_Visual_Systems/camera/opencv2/imgcodecs.hpp
+/home/pi/Swarm_Robots_Visual_Systems/src/camera/opencv2/imgcodecs.hpp
 opencv2/highgui.hpp
-/home/pi/Swarm_Robots_Visual_Systems/camera/opencv2/highgui.hpp
+/home/pi/Swarm_Robots_Visual_Systems/src/camera/opencv2/highgui.hpp
 opencv2/calib3d.hpp
-/home/pi/Swarm_Robots_Visual_Systems/camera/opencv2/calib3d.hpp
+/home/pi/Swarm_Robots_Visual_Systems/src/camera/opencv2/calib3d.hpp
 opencv2/opencv.hpp
-/home/pi/Swarm_Robots_Visual_Systems/camera/opencv2/opencv.hpp
+/home/pi/Swarm_Robots_Visual_Systems/src/camera/opencv2/opencv.hpp
 iostream
 -
 cstdlib

@@ -1,4 +1,4 @@
-# Install script for directory: /home/pi/Swarm_Robots_Visual_Systems/camera
+# Install script for directory: /home/pi/Swarm_Robots_Visual_Systems/src/camera
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/pi/Swarm_Robots_Visual_Systems/camera/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/pi/Swarm_Robots_Visual_Systems/src/camera/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
