@@ -1,0 +1,297 @@
+import time
+from angleToIntercept import * 
+
+import numpy
+import Adafruit_BBIO.UART as UART
+import serial
+from time import sleep
+import rcpy.servo as servo
+import rcpy.gpio as gpio
+
+from rcpy.servo import servo8 as leftServo
+from rcpy.servo import servo1 as rightServo
+
+import smbus
+from colorCheck import *
+
+################################################
+#             CONTROL FUNCTIONS
+################################################
+
+def time_to_turn(angle, max_speed):
+    angle = angle - 90
+    if angle < 0:
+        angle = angle + 360
+    circumference = (12.3 / 2) * 2 * numpy.pi
+    distance = circumference * angle / 360
+    return distance / max_speed
+
+# A function that cuts off the range so that the wheels only spin
+# forward. It takes a bounded_setting between [-1 1].
+# The right servo is encoded with a 1 and the left with a 0.
+def cutoff(servo, bounded_setting):
+    if servo:
+        if bounded_setting > 0.0:
+            return -0.05
+        else:
+            return bounded_setting
+    else:
+        if bounded_setting < 0.0:
+            return 0.05
+        else:
+            return bounded_setting
+
+# A function for normalizing the motor setting to the range [-1 1].
+# The servo motors have a safe range of operation between those
+# two points 
+def norm(unbounded_setting):
+    if abs(unbounded_setting) <= 1.0:
+        return unbounded_setting
+    else:
+        return unbounded_setting / abs(unbounded_setting)
+        
+# A function for finding the second wheel speed when turning
+# at a desired radius. Because the function returns the inner wheel
+# speed this function is safe to call with the current wheel speed of
+# the outer wheel without having to worry about going outside the bounds
+# of the safe servo range [-1 1].
+# r is the radius of the circle that the robot should turn at.
+# v1 is the speed of the outer wheel (faster wheel)
+# returns v2 which is the inner wheel speed (slower wheel)
+# r = ((v1+v2)/(v1-v2) - 1)(d/2)
+# (r * 2/d) + 1 = v1+v2/v1-v2
+# ((r*2/d) + 1)v1 - ((r*2/d) + 1)v2 = v1 + v2
+# ((r*2/d) + 1)v1 - v1 = ((r*2/d) + 1)v2 + v2
+# ((r*2/d) + 1)v1 - v1 = (((r*2/d) + 1) + 1)v2
+# (((r*2/d) + 1)v1 - v1) / (((r*2/d) + 1) + 1) = v2
+def turn_at_radius(r, v1):
+    width = 11.5 # width of the robot wheels in cm
+    if r < width:
+        print("Turning radius too tight: {} cm".format(r))
+        print("Going Straight")
+        return v1
+    
+    v2 = ((((r * 2 / width) + 1) * v1) - v1) / (((r * 2 / width) + 1) + 1)
+    
+    return v2
+
+# Function for calculating the speed based on the wheel diameter
+# and the length of time it took to travel 4.34 centimeters which
+# is 1/5 the circumference of the wheel
+def calculate_speed(t_Prev, t_Now):
+    distance = 4.34 # 2.17 cm is how far the wheel travels in a single state
+    delta_t = t_Now - t_Prev
+    return distance / delta_t
+
+# Simple funtion to calculate the error from the measured speed
+def calculate_error(measured_speed, ideal_speed):
+    return (ideal_speed - measured_speed)
+
+# Simple function for calculating the integral of the error
+def calculate_ierror(integral_error, curr_error, tPrev, tNow):
+    return ((integral_error + curr_error) * (tNow - tPrev))
+
+# Simple function for calculating the derivative of the error
+def calculate_derror(curr_error, prev_error, tPrev, tNow):
+    return ((curr_error - prev_error) / (tNow - tPrev))
+
+# Function that implements pid control. Currently P works sufficiently and the
+# other two components have not been implemented.
+# wheel_id is 1 for the right servo and 0 for the left
+def pid_control(p, i, d, error, integral_error, derivative_error, motor_setting, max_speed, wheel_id):
+    # Since the error has units of cm/s we need to convert to us for sending to the servos
+    proportional_component = convert_speed_to_duty(p * error, max_speed)
+    integral_component = convert_speed_to_duty(i * integral_error, max_speed)
+    derivative_component = convert_speed_to_duty(d * derivative_error, max_speed)
+
+    # We need to normalize the output to a range of [-1 1]
+    output_motor_setting = cutoff(wheel_id, norm(proportional_component + integral_component + derivative_component + motor_setting))
+    #print("Output Motor Setting: {}, Proportional: {}, Integral: {}, Derivative: {} Input Motor Setting: {}".format(output_motor_setting, proportional_component, integral_component, derivative_component, motor_setting))
+    return output_motor_setting
+
+# Function for converting between an input speed from control to an output duty
+# cycle for the servos
+def convert_speed_to_duty(speed, max_speed):
+    return norm(speed / max_speed)
+
+# Function for converting between us for the duty cyle and cm/s for the speed of the motors
+def convert_duty_to_speed(motor_setting, max_speed):
+    return norm(motor_setting) * max_speed
+
+################################################
+#       END CONTROL FUNCTION DECLARATIONS
+################################################
+
+# Set up GPIO pins and configure Wheel Encoders
+left_encoder_pin = 25
+right_encoder_pin = 17
+encoder_chip = 1
+left_encoder = gpio.Input(encoder_chip, left_encoder_pin)
+right_encoder = gpio.Input(encoder_chip, right_encoder_pin)
+
+################################################
+#                  SERVO SETUP
+################################################
+
+# Enable servo and calibrate light sensor
+servo.enable()
+
+# Motor speeds
+left_motor_speed = 18 # cm/s
+left_motor_setting = convert_speed_to_duty(left_motor_speed, 21.924028091423587)
+right_motor_speed = 18 # cm/s
+right_motor_setting = convert_speed_to_duty(right_motor_speed, -20.9995597347149)
+
+# Set up clocks to periodically update the motors
+period = 0.02
+leftServo.set(0.0)
+rightServo.set(0.0)
+clk0 = leftServo.start(period)
+clk1 = rightServo.start(period)
+
+# We wait for a short amount of time while sending 0.0 pulse
+# before jumping in to the control loop
+print("Press enter to continue")
+input()
+
+# Function that takes a new speed for the two motor
+# and updates the necessary variables
+# it then calls the servo.set() function to update
+# the pulse being sent to the servos
+def update_motors(left_new_speed, right_new_speed):
+    global left_motor_setting, right_motor_setting
+    global left_motor_speed, right_motor_speed
+
+    left_motor_speed = left_new_speed
+    right_motor_speed = right_new_speed
+    left_motor_setting = convert_speed_to_duty(left_motor_speed, 21.924028091423587)
+    right_motor_setting = convert_speed_to_duty(right_motor_speed, -20.9995597347149)
+    leftServo.set(left_motor_setting)
+    rightServo.set(right_motor_setting)
+
+################################################
+#              END SERVO SETUP
+################################################   
+
+# Time variables
+left_tPrev = time.time()
+left_tNow = left_tPrev
+right_tPrev = time.time()
+right_tNow = left_tPrev
+
+# State variables
+left_start_state = left_encoder.get()
+left_state = left_start_state
+right_start_state = right_encoder.get()
+right_state = right_start_state
+control_current_state = "black"
+
+# Error variables
+left_prev_error = 0
+left_curr_error = 0
+left_integral_error = 0
+left_derivative_error = 0
+
+right_prev_error = 0
+right_curr_error = 0
+right_integral_error = 0
+right_derivative_error = 0
+
+# Chase variables
+chasing = False
+chasing_time = 0
+
+
+# Characterizations
+# Right max Speed: 20.9995597347149 cm / s
+# Left max Speed: 21.924028091423587 cm / s
+# Wheel Circumference: 21.7 cm
+# Wheel Base 12.3 cm
+UART.setup("UART1")
+
+ser = serial.Serial(port = "/dev/ttyO1", baudrate=9600) #9600 is baudrate for PI 115200 is for beaglebone
+# Main control loop
+while True:
+
+    data = ser.readline()
+    cameraData = data.decode('utf-8').split(',')
+    #print(cameraData)
+    if chasing == False:
+        print("Looking")
+        print(cameraData[0])
+        if cameraData[0] == "1":
+            ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), cameraData[4], 10, 15)
+            print("Turning angle {}".format(ang))
+            time_t = time_to_turn(ang, 16)
+            print(time_t)
+            update_motors(0, 0)
+            time.sleep(.5)
+            if ang > 0:
+                update_motors(-16, 16)
+            else:
+                update_motors(16, -16)
+            time.sleep(time_t)
+            update_motors(16, 16)
+            chasing = True
+        else:
+            print("Turning")
+            update_motors(5, 0)
+
+    #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
+
+    if chasing == True:
+        print("Chasing: {}".format(chasing_time))
+        chasing_time = chasing_time + 1
+        if chasing_time > 75:
+            chasing = False
+            chasing_time = 0
+
+    # Get Readings from encoders for comparison
+    left_reading = left_encoder.get()
+    right_reading = right_encoder.get()
+
+    # Check if the wheel has spun
+    if left_state != left_reading:
+        left_state = left_reading
+        # If the wheel has spun two states then we know the distance
+        if left_state == left_start_state:
+            # Update time
+            left_tPrev = left_tNow
+            left_tNow = time.time()
+            
+            # Calculate Speed and error
+            speed = calculate_speed(left_tPrev, left_tNow)
+            left_prev_error = left_curr_error
+            left_curr_error = calculate_error(speed, left_motor_speed)
+            left_integral_error = calculate_ierror(left_integral_error, left_curr_error, left_tPrev, left_tNow)
+            left_derivative_error = calculate_derror(left_curr_error, left_prev_error, left_tPrev, left_tNow)
+            print("Left Speed: {}, Left Setting: {}, Left Error: {}, Left Ierror: {} Left Derror: {}".format(speed, left_motor_setting, left_curr_error, left_integral_error, left_derivative_error))
+            # Control
+            left_motor_setting = pid_control(0.5, 1, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+            #left_motor_setting = pid_control(0.8833, 1.408, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+            #left_motor_setting = pid_control(.1, .2, .01, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+            leftServo.set(left_motor_setting)
+
+    if right_state != right_reading:
+        right_state = right_reading
+        if right_state == right_start_state:
+            right_tPrev = right_tNow
+            right_tNow = time.time()
+            
+            speed = calculate_speed(right_tPrev, right_tNow)
+            left_prev_error = left_curr_error
+            right_curr_error = calculate_error(speed, right_motor_speed)
+            right_integral_error = calculate_ierror(right_integral_error, right_curr_error, right_tPrev, right_tNow)
+            right_derivative_error = calculate_derror(right_curr_error, right_prev_error, right_tPrev, right_tNow)
+            print("Right Speed: {}, Right Setting: {}, Right Error: {}, Right Ierror: {} Right Derror: {}".format(speed, right_motor_setting, right_curr_error, right_integral_error, right_derivative_error))
+            
+            right_motor_setting = pid_control(0.5, 1, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+            #right_motor_setting = pid_control(0.8833, 1.408, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+            #right_motor_setting = pid_control(.1, .2, .01, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+            rightServo.set(right_motor_setting)
+
+
+
+clk0.stop()
+clk1.stop()
+servo.disable()
