@@ -10,13 +10,13 @@ def angleToIntercept(distance, theta0, theta1, squareColor, runnerSpeed, chaserS
     # Check with lam on the logic
     if (theta0 < 0): # Robot is on the left
         #if (theta1 > 90 or theta1 > 270): # Robot is going left
-        if (squareColor == 'purple' or (squareColor == 'red' and theta1 < 0)):
+        if (squareColor == 'purple' or (squareColor == 'yellow' and theta1 > 0)):
             theta = 180 + theta0 - theta1
-        elif (squareColor == 'yellow' or (squareColor == 'red' and theta1 > 0)):
+        elif (squareColor == 'green' or (squareColor == 'yellow' and theta1 < 0)):
             theta = theta1 - theta0
     else: # Robot is on the right
         #if(theta1 > 90 or theta1 > 270): # Robot is going left
-        if (squareColor == 'purple' or (squareColor == 'red' and theta1 < 0)):
+        if (squareColor == 'purple' or (squareColor == 'yellow' and theta1 > 0)):
             theta = 180 + theta0 + theta1
         else:
             theta = theta0 - theta1
