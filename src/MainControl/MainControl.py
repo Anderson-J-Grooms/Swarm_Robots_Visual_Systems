@@ -338,13 +338,13 @@ while True:
         update_motors(0,0)
         print(float(cameraData[0]))
         if float(cameraData[0]) == 1:
-            ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), cameraData[4], 10, 15)
+            ang, time_f = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), int(cameraData[4]), 10, 15)
             print("Turning angle {}".format(ang))
             time_t = time_to_turn(ang, 16)
             update_motors(16, -16)
             time.sleep(time_t)
             update_motors(16, 16)
-            chasing = True
+            time.sleep(time_f)
         else:
             print("Turning")
             update_motors(5, 0)
@@ -377,13 +377,6 @@ while True:
         break
 
     #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
-
-    if chasing == True:
-        chasing_time = chasing_time + 1
-
-        if chasing_time > 200:
-            chasing_time = 0
-            chasing = False
 
     # Get Readings from encoders for comparison
     left_reading = left_encoder.get()

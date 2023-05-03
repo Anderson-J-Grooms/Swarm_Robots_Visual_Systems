@@ -6,24 +6,46 @@ def angleToIntercept(distance, theta0, theta1, squareColor, runnerSpeed, chaserS
     #    theta1 = theta1 + 90
     #elif squareColor == "green":
     #    theta1 = theta1 + 180
-
+    print(squareColor)
     theta0 = 90 - theta0
-    # Check with lam on the logic
-
-    #if (theta0 > 90): # Robot is on the left
+    lor = False #left false right true
+    # Check with lam on the logic 
     #if (theta1 > 90 or theta1 > 270): # Robot is going left
-    if (squareColor == 'purple' or (squareColor == 'red' and theta1 < 0)):
+    if (squareColor == 0):
         theta = theta0 - theta1
+        print("purple {} {}".format(theta, squareColor == 0))
         if theta1 < 0:
-            VRy = np.sin(np.absolute(theta1))*runnerSpeed
+            VRy = np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
         else:
-            VRy = -np.sin(np.absolute(theta1))*runnerSpeed
-    else:
+            VRy = -np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
+    elif (squareColor == 1):
         theta = 180 - theta0 + theta1
+        print("green {} {}".format(theta, squareColor == 1))
+        lor = True
         if theta1 < 0:
-            VRy = -np.sin(np.absolute(theta1))*runnerSpeed
+            VRy = -np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
         else:
-            VRy = np.sin(np.absolute(theta1))*runnerSpeed
+            VRy = np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
+    elif (squareColor == 2):
+        if theta1 > 0: #purple
+            theta1 = theta1 - 90
+            theta = theta0 - theta1
+            if theta1 < 0:
+                VRy = np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
+            else:
+                VRy = -np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
+            print("purple {} {}".format(theta, squareColor == 0))
+        else:
+            theta1 = theta1 + 90
+            theta = 180 - theta0 + theta1
+            print("green {} {}".format(theta, squareColor == 1))
+            lor = True
+            if theta1 < 0:
+                VRy = -np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
+            else:
+                VRy = np.sin(np.absolute(np.deg2rad(theta1)))*runnerSpeed
+    else:
+        print("NAN")
     #else: # Robot is on the right
     #    #if(theta1 > 90 or theta1 > 270): # Robot is going left
     #    if (squareColor == 'purple' or (squareColor == 'red' and theta1 < 0)):
@@ -42,7 +64,11 @@ def angleToIntercept(distance, theta0, theta1, squareColor, runnerSpeed, chaserS
     # VR = (cos(theta1)*runnerSpeed, sin(theta1)*runnerSpeed)
     #VRy = np.sin(theta1)*runnerSpeed
     y = (Dy+VRy*time)/time
-    print("{} {}".format(y,chaserSpeed))
+    print("{} {} {}".format(Dy, VRy, time))
+    print("{} {}".format(y, chaserSpeed))
     angle = np.arccos(y/chaserSpeed)
     angle = np.rad2deg(angle)
-    return angle
+    if lor: 
+        return angle, time
+    else:
+        return -angle, time

@@ -220,8 +220,9 @@ while True:
         print("Looking")
         print(cameraData[0])
         if cameraData[0] == "1":
-            print("Camera angle: {}".format(cameraData[1]))
-            ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), cameraData[4], 10, 15)
+            print("d, t0, t1: {} {} {}".format(cameraData[1], cameraData[2], cameraData[3]))
+            ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), int(cameraData[4]
+                ), 10, 15)
             print("Turning angle {}".format(ang))
             input()
             #time_t = time_to_turn(ang, 16)
