@@ -18,14 +18,12 @@ from colorCheck import *
 #             CONTROL FUNCTIONS
 ################################################
 
-# Using the circumference of the wheel base we can calculate
-# the length of time required to turn to change our pose
-# by the value of angle
-# float: angle The angle we want to turn at
-# int: max_speed the speed at which the wheels will spin
 def time_to_turn(angle, max_speed):
+    angle = angle - 90
+    if angle < 0:
+        angle = angle + 360
     circumference = (12.3 / 2) * 2 * numpy.pi
-    distance = circumference / 360 * angle
+    distance = circumference * angle / 360
     return distance / max_speed
 
 # A function that cuts off the range so that the wheels only spin
@@ -108,7 +106,7 @@ def pid_control(p, i, d, error, integral_error, derivative_error, motor_setting,
 
     # We need to normalize the output to a range of [-1 1]
     output_motor_setting = cutoff(wheel_id, norm(proportional_component + integral_component + derivative_component + motor_setting))
-    print("Output Motor Setting: {}, Proportional: {}, Integral: {}, Derivative: {} Input Motor Setting: {}".format(output_motor_setting, proportional_component, integral_component, derivative_component, motor_setting))
+    #print("Output Motor Setting: {}, Proportional: {}, Integral: {}, Derivative: {} Input Motor Setting: {}".format(output_motor_setting, proportional_component, integral_component, derivative_component, motor_setting))
     return output_motor_setting
 
 # Function for converting between an input speed from control to an output duty
@@ -122,106 +120,6 @@ def convert_duty_to_speed(motor_setting, max_speed):
 
 ################################################
 #       END CONTROL FUNCTION DECLARATIONS
-################################################
-
-################################################
-#              RGB SENSOR SETUP
-################################################
-
-#light sensor data
-# Get I2C bus
-bus=smbus.SMBus(1)
-bus.write_byte_data(0x44, 0x01, 0x0D)
-greenBlack = 0
-greenWhite = 0
-redBlack = 0
-redWhite = 0 
-blueBlack = 0
-blueWhite = 0
-rScale = 1
-gScale = 1
-bScale = 1
-first = True
-firstCount = 0
-second = True
-secondCount = 0
-
-# Function for calibrating the RGB sensor for the ambient light conditions
-def calibrate_light():
-    global first, firstCount, second, secondCount
-    global greenBlack, greenWhite, redBlack, redWhite, blueBlack, blueWhite
-    global rScale, gScale, bScale
-    
-    while first or second:
-        # get sensor data
-        data = bus.read_i2c_block_data(0x44, 0x09, 6)
-        g = data[1] * 256 + data[0]
-        r = data[3] * 256 + data[2]
-        b = data[5] * 256 + data[4]
-        
-        # calibrate sensor on first 2 loops
-        if first:
-            greenBlack = min(g, greenBlack)
-            redBlack = min(r, redBlack)
-            blueBlack = min(b, blueBlack)
-            firstCount = firstCount + 1
-            if firstCount >= 2000:
-                first = False
-                print("Switch to white and press enter to continue")
-                input()
-        elif second:
-            greenWhite = max(g, greenWhite)
-            redWhite = max(r, redWhite)
-            blueWhite = max(b, blueWhite)
-            rScale = redWhite-redBlack
-            gScale = greenWhite-greenBlack
-            bScale = blueWhite-blueBlack
-            secondCount = secondCount + 1
-            if secondCount >= 2000:
-                second = False
-                print("press enter to continue")
-                input()
-            
-# Function for calling the RGB sensor code and getting a color
-def get_color():
-    global greenBlack, greenWhite, redBlack, redWhite, blueBlack, blueWhite
-    global rScale, gScale, bScale
-    # get sensor data
-    data = bus.read_i2c_block_data(0x44, 0x09, 6)
-    g = data[1] * 256 + data[0]
-    r = data[3] * 256 + data[2]
-    b = data[5] * 256 + data[4]
-
-    try:
-        r = 1.0 * (r-redBlack) / rScale
-        g = 1.0 * (g-greenBlack) / gScale
-        b = 1.0 * (b-blueBlack) / bScale
-    except:
-        print("division by zero")
-    cmax = max(r, g, b)
-    cmin = min(r, g, b)
-    diff = cmax-cmin
-    h = -1
-    s = -1
-    if cmax == cmin:
-        h = 0
-    elif cmax == r:
-        h = (60.0 * ((g-b) / diff) + 360) % 360
-    elif cmax == g:
-        h = (60.0 * ((g-b) / diff) + 360) % 360
-    elif cmax == b:
-        h = (60.0 * ((g-b) / diff) + 360) % 360
-    if cmax == 0:
-        s = 0
-    else:
-        s = (diff / cmax) * 100
-    v = cmax * 100
-    return colorCheck(h, s, v)
-
-calibrate_light()
-
-################################################
-#            END RGB SENSOR SETUP
 ################################################
 
 # Set up GPIO pins and configure Wheel Encoders
@@ -317,80 +215,45 @@ while True:
 
     data = ser.readline()
     cameraData = data.decode('utf-8').split(',')
-#    print(cameraData)
-
-    # Take a color reading and decide if we are changing states
-    state_color = get_color()
-    if state_color != control_current_state:
-        print("STATE CHANGE: {}".format(state_color))
-        update_motors(0, 0)
-        time.sleep(.5)
-        state_color = get_color()
-
-    if state_color == "red" and state_color != control_current_state and chasing == False:
-        control_current_state = state_color
-        print("STOPPING")
-        update_motors(0, 0)
-
-    elif state_color == "yellow" or state_color == "green" and state_color != control_current_state and chasing == False:
-        control_current_state = state_color
-        print("STARTING")
-        update_motors(0,0)
-        print(float(cameraData[0]))
-        if float(cameraData[0]) == 1:
+    #print(cameraData)
+    if chasing == False:
+        print("Looking")
+        print(cameraData[0])
+        if cameraData[0] == "1":
+            print("Camera angle: {}".format(cameraData[1]))
             ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), cameraData[4], 10, 15)
             print("Turning angle {}".format(ang))
-            time_t = time_to_turn(ang, 16)
-            update_motors(16, -16)
-            time.sleep(time_t)
-            update_motors(16, 16)
-            chasing = True
+            input()
+            #time_t = time_to_turn(ang, 16)
+            #print(time_t)
+            #update_motors(0, 0)
+            #time.sleep(.5)
+            #if ang > 0:
+            #    update_motors(-16, 16)
+            #else:
+            #    update_motors(16, -16)
+            #time.sleep(time_t)
+            #update_motors(16, 16)
+            #chasing = True
         else:
             print("Turning")
-            update_motors(5, 0)
-
-    elif state_color == "blue" and state_color != control_current_state and chasing == False:
-        control_current_state = state_color
-        print("TURNING")
-        update_motors(5,-5)
-        time.sleep(1)
-        update_motors(16,16)
-
-    elif state_color == "magenta" and state_color != control_current_state:
-        control_current_state = state_color
-        print("TURNING")
-        update_motors(5, -5)
-        time.sleep(1)
-        update_motors(16,16)
-
-    elif state_color == "white" and state_color != control_current_state and chasing == False:
-        control_current_state = state_color
-        print("Turning Left")
-        v1 = left_motor_speed
-        v2 = turn_at_radius(15, v1)
-        print("Turning Wheel Speeds: Left ({}) Right ({})".format(v1, v2))
-        update_motors(v1, v2)
-
-    elif state_color == "black" and state_color != control_current_state and chasing == False:
-        print("This probably shouldn't happen...")
-        print("stopping everything safely")
-        break
+            #update_motors(5, 0)
 
     #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
 
     if chasing == True:
+        print("Chasing: {}".format(chasing_time))
         chasing_time = chasing_time + 1
-
-        if chasing_time > 200:
-            chasing_time = 0
+        if chasing_time > 75:
             chasing = False
+            chasing_time = 0
 
     # Get Readings from encoders for comparison
     left_reading = left_encoder.get()
     right_reading = right_encoder.get()
 
     # Check if the wheel has spun
-    if left_state != left_reading:
+    if left_state != left_reading and False:
         left_state = left_reading
         # If the wheel has spun two states then we know the distance
         if left_state == left_start_state:
@@ -411,7 +274,7 @@ while True:
             #left_motor_setting = pid_control(.1, .2, .01, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
             leftServo.set(left_motor_setting)
 
-    if right_state != right_reading:
+    if right_state != right_reading and False:
         right_state = right_reading
         if right_state == right_start_state:
             right_tPrev = right_tNow

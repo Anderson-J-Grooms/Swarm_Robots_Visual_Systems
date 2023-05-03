@@ -2,25 +2,27 @@ import numpy as np
 
 # Uses the data from the camera to determine the angle the robot needs to turn to intercept the other robot.
 def angleToIntercept(distance, theta0, theta1, squareColor, runnerSpeed, chaserSpeed):
-    if squareColor == "purple":
-        theta1 = theta1 + 90
-    elif squareColor == "green":
-        theta1 = theta1 + 180
+    #if squareColor == "purple":
+    #    theta1 = theta1 + 90
+    #elif squareColor == "green":
+    #    theta1 = theta1 + 180
 
     # Check with lam on the logic
-    if (theta0 > 0): # Robot is on the left
-        if(theta1 > 90 or theta1 > 270): # Robot is going left
+    if (theta0 < 0): # Robot is on the left
+        #if (theta1 > 90 or theta1 > 270): # Robot is going left
+        if (squareColor == 'purple' or (squareColor == 'red' and theta1 < 0)):
             theta = 180 + theta0 - theta1
-        else:
+        elif (squareColor == 'yellow' or (squareColor == 'red' and theta1 > 0)):
             theta = theta1 - theta0
     else: # Robot is on the right
-        if(theta1 > 90 or theta1 > 270): # Robot is going left
+        #if(theta1 > 90 or theta1 > 270): # Robot is going left
+        if (squareColor == 'purple' or (squareColor == 'red' and theta1 < 0)):
             theta = 180 + theta0 + theta1
         else:
             theta = theta0 - theta1
     theta = np.deg2rad(theta)
     theta0 = np.deg2rad(theta0)
-    theta1 = np.deg2rad(theta1)
+    theta1 = np.deg2rad(theta1) 
     b = 2*distance*runnerSpeed*np.cos(theta)
     a = np.power(chaserSpeed, 2)-np.power(runnerSpeed, 2)
     c = np.power(distance,2)
