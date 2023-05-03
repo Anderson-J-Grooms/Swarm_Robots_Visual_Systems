@@ -209,7 +209,7 @@ chasing_time = 0
 # Wheel Base 12.3 cm
 UART.setup("UART1")
 
-ser = serial.Serial(port = "/dev/ttyO1", baudrate=9600) #9600 is baudrate for PI 115200 is for beaglebone
+ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200) #9600 is baudrate for PI 115200 is for beaglebone
 # Main control loop
 while True:
 
@@ -220,22 +220,24 @@ while True:
         print("Looking")
         print(cameraData[0])
         if cameraData[0] == "1":
+            print("Camera angle: {}".format(cameraData[1]))
             ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), cameraData[4], 10, 15)
             print("Turning angle {}".format(ang))
-            time_t = time_to_turn(ang, 16)
-            print(time_t)
-            update_motors(0, 0)
-            time.sleep(.5)
-            if ang > 0:
-                update_motors(-16, 16)
-            else:
-                update_motors(16, -16)
-            time.sleep(time_t)
-            update_motors(16, 16)
-            chasing = True
+            input()
+            #time_t = time_to_turn(ang, 16)
+            #print(time_t)
+            #update_motors(0, 0)
+            #time.sleep(.5)
+            #if ang > 0:
+            #    update_motors(-16, 16)
+            #else:
+            #    update_motors(16, -16)
+            #time.sleep(time_t)
+            #update_motors(16, 16)
+            #chasing = True
         else:
             print("Turning")
-            update_motors(5, 0)
+            #update_motors(5, 0)
 
     #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
 
@@ -251,7 +253,7 @@ while True:
     right_reading = right_encoder.get()
 
     # Check if the wheel has spun
-    if left_state != left_reading:
+    if left_state != left_reading and False:
         left_state = left_reading
         # If the wheel has spun two states then we know the distance
         if left_state == left_start_state:
@@ -272,7 +274,7 @@ while True:
             #left_motor_setting = pid_control(.1, .2, .01, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
             leftServo.set(left_motor_setting)
 
-    if right_state != right_reading:
+    if right_state != right_reading and False:
         right_state = right_reading
         if right_state == right_start_state:
             right_tPrev = right_tNow

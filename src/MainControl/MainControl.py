@@ -1,7 +1,7 @@
 import time
 from angleToIntercept import * 
 
-
+import numpy
 import Adafruit_BBIO.UART as UART
 import serial
 from time import sleep
@@ -18,6 +18,11 @@ from colorCheck import *
 #             CONTROL FUNCTIONS
 ################################################
 
+# Using the circumference of the wheel base we can calculate
+# the length of time required to turn to change our pose
+# by the value of angle
+# float: angle The angle we want to turn at
+# int: max_speed the speed at which the wheels will spin
 def time_to_turn(angle, max_speed):
     circumference = (12.3 / 2) * 2 * numpy.pi
     distance = circumference / 360 * angle
@@ -296,7 +301,7 @@ right_derivative_error = 0
 
 # Chase variables
 chasing = False
-chase_time = 0
+chasing_time = 0
 
 
 # Characterizations
@@ -306,7 +311,7 @@ chase_time = 0
 # Wheel Base 12.3 cm
 UART.setup("UART1")
 
-ser = serial.Serial(port = "/dev/ttyO1", baudrate=9600) #9600 is baudrate for PI 115200 is for beaglebone
+ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200) #9600 is baudrate for PI 115200 is for beaglebone
 # Main control loop
 while True:
 
@@ -332,14 +337,14 @@ while True:
         print("STARTING")
         update_motors(0,0)
         print(float(cameraData[0]))
-        if float(cameraData[0]) == 1: 
+        if float(cameraData[0]) == 1:
             ang = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), cameraData[4], 10, 15)
             print("Turning angle {}".format(ang))
-            time = time_to_turn(ang, 16)
+            time_t = time_to_turn(ang, 16)
             update_motors(16, -16)
-            time.sleep(time)
+            time.sleep(time_t)
             update_motors(16, 16)
-            chasing = true
+            chasing = True
         else:
             print("Turning")
             update_motors(5, 0)
@@ -351,7 +356,7 @@ while True:
         time.sleep(1)
         update_motors(16,16)
 
-    elif state_color == "magenta" and state_color != control_current_state and chasing == False:
+    elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
         update_motors(5, -5)
@@ -377,6 +382,7 @@ while True:
         chasing_time = chasing_time + 1
 
         if chasing_time > 200:
+            chasing_time = 0
             chasing = False
 
     # Get Readings from encoders for comparison

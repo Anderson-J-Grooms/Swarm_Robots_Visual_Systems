@@ -5,7 +5,7 @@ from time import sleep
 UART.setup("UART1")
 
 
-ser = serial.Serial(port = "/dev/ttyO1", baudrate=9600)
+ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200)
 while ser.isOpen():
     print("Serial is open!")
     #data = ser.read()
