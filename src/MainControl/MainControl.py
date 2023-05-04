@@ -428,7 +428,7 @@ while True:
     elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
         chase = False
-        PRINT("BURNING")
+        print("BURNING")
         update_motors(6,-6)
         time.sleep(1)
         update_motors(18,18)
