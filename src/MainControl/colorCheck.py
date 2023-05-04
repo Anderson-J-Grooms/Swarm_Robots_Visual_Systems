@@ -26,11 +26,11 @@ def colorCheck(h,s,v) :
         return "cyan"
 
     # Command 3 - seeing blue
-    if (h >= 220 and h < 280):
+    if (h >= 220 and h < 275):
         return "blue"
 
     # Command 2 - seeing magenta
-    if (h >= 280) :
+    if (h >= 275) :
         return "magenta"
 
     # Command 0 - default, no light or black light
