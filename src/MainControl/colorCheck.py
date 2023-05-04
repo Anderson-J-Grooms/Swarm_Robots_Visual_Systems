@@ -14,11 +14,11 @@ def colorCheck(h,s,v) :
         return "red"
 
     # Command 6 - seeing yellow
-    if (h >= 30 and h < 50):
+    if (h >= 30 and h < 60):
         return "yellow"
 
     # Command 5 - seeing green
-    if (h >= 50 and h < 100):
+    if (h >= 60 and h < 100):
         return "green"
 
     # Command 4 - seeing cyan
@@ -26,11 +26,11 @@ def colorCheck(h,s,v) :
         return "cyan"
 
     # Command 3 - seeing blue
-    if (h >= 220 and h < 275):
+    if (h >= 220 and h < 280):
         return "blue"
 
     # Command 2 - seeing magenta
-    if (h >= 275) :
+    if (h >= 280) :
         return "magenta"
 
     # Command 0 - default, no light or black light
