@@ -417,7 +417,7 @@ while True:
             print("Turning")
             update_motors(5, 0)
 
-    elif state_color == "blue" and state_color != control_current_state and chasing == False:
+    elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
         update_motors(5,-5)
