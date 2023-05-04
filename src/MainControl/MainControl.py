@@ -374,19 +374,21 @@ control_current_state = "black"
 # Wheel Circumference: 21.7 cm
 # Wheel Base 12.3 cm
 UART.setup("UART1")
-
+chase = False
 ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200) #9600 is baudrate for PI 115200 is for beaglebone
+ts = 0
+th = 0
 
 # Main control loop
 while True:
 
-    data = ser.read()
-    sleep(.03)
-    data_left = ser.inWaiting()
-    data += ser.read(data_left)
-    #data = ser.readline()
+    #data = ser.read()
+    #sleep(.03)
+    #data_left = ser.inWaiting()
+    #data += ser.read(data_left)
+    data = ser.readline()
     cameraData = data.decode('utf-8').split(",")
-    #print(cameraData)
+    print(cameraData)
 
     # Take a color reading and decide if we are changing states
     state_color = get_color()
@@ -396,16 +398,16 @@ while True:
         time.sleep(.5)
         state_color = get_color()
 
-    if state_color == "red" and state_color != control_current_state:
+    if state_color == "red" and state_color != control_current_state and not chase:
         control_current_state = state_color
         print("STOPPING")
         update_motors(0, 0)
 
-    elif (state_color == "yellow" or state_color == "green"):
+    elif not chase and (state_color == "yellow" or state_color == "green"):
         control_current_state = state_color
         print("STARTING")
         update_motors(0,0)
-        #print(float(cameraData[0]))
+        print(float(cameraData[0]))
         if float(cameraData[0]) == 1:
             ang, time_f = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), int(cameraData[4]), 16, 18)
             print("Turning angle {}".format(ang))
@@ -416,7 +418,9 @@ while True:
                 update_motors(18,-18)
             time.sleep(time_t)
             update_motors(18, 18)
-            time.sleep(time_f)
+            chase = True
+            ts = time.time()
+            th = time_f
         else:
             print("Turning")
             update_motors(5, 0)
@@ -424,19 +428,28 @@ while True:
     elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
+        chase = False
         update_motors(5,-5)
         time.sleep(1)
         update_motors(16,16)
 
-    elif state_color == "magenta" and state_color != control_current_state:
+    elif state_color == "magenta" and state_color != control_current_state and not chase:
         control_current_state = state_color
-        print("BOUNCE")
-        update_motors(18,18)
+        print("TURNING")
+        update_motors(5, -5)
+        time.sleep(1)
+        update_motors(16,16)
 
     elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
         print("stopping everything safely")
         break
+    if chase:
+        if time.time() - ts >= th:
+            chase = False
+            update_motors(0,0)
+            ts = 0
+            th = 0
 
     #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
 
