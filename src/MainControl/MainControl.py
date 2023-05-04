@@ -394,9 +394,9 @@ while True:
     state_color = get_color()
     if state_color != control_current_state:
         time.sleep(0.25)
-        print("STATE CHANGE: {}".format(state_color))
         update_motors(0, 0)
-        state_color = get_color()
+        state_color = get_color() 
+        print("STATE CHANGE: {}, CHASING {}".format(state_color, chase))
 
     if state_color == "red" and state_color != control_current_state and not chase:
         control_current_state = state_color
@@ -411,7 +411,7 @@ while True:
         if float(cameraData[0]) == 1:
             ang, time_f = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), int(cameraData[4]), 16, 18)
             print("Turning angle {}".format(ang))
-            time_t = time_to_turn(abs(ang), 16)
+            time_t = time_to_turn(abs(ang), 18)
             if ang < 0:
                 update_motors(-18, 18)
             else:
@@ -427,18 +427,19 @@ while True:
 
     elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
-        print("TURNING")
         chase = False
-        update_motors(5,-5)
+        PRINT("BURNING")
+        update_motors(6,-6)
         time.sleep(1)
-        update_motors(16,16)
+        update_motors(18,18)
 
     elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
-        print("TURNING")
-        update_motors(5, -5)
+        chase = False
+        print("MURNING")
+        update_motors(6, -6)
         time.sleep(1)
-        update_motors(16,16)
+        update_motors(18,18)
 
     elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
