@@ -435,8 +435,9 @@ while True:
 
     elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
+        chase = False
         print("Starting")
-        update_motors(16, 16)
+        update_motors(18, 18)
 
     elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
