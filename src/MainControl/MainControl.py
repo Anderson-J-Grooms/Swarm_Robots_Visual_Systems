@@ -380,8 +380,12 @@ ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200) #9600 is baudrate for 
 # Main control loop
 while True:
 
-    data = ser.readline()
-    cameraData = data.decode('utf-8').split(',')
+    data = ser.read()
+    sleep(.03)
+    data_left = ser.inWaiting()
+    data += ser.read(data_left)
+    #data = ser.readline()
+    cameraData = data.decode('utf-8').split(",")
     #print(cameraData)
 
     # Take a color reading and decide if we are changing states
@@ -397,18 +401,21 @@ while True:
         print("STOPPING")
         update_motors(0, 0)
 
-    elif (state_color == "yellow" or state_color == "green") and state_color != control_current_state:
+    elif (state_color == "yellow" or state_color == "green"):
         control_current_state = state_color
         print("STARTING")
         update_motors(0,0)
-        print(float(cameraData[0]))
+        #print(float(cameraData[0]))
         if float(cameraData[0]) == 1:
-            ang, time_f = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), int(cameraData[4]), 10, 15)
+            ang, time_f = angleToIntercept(float(cameraData[1]), float(cameraData[2]), float(cameraData[3]), int(cameraData[4]), 16, 18)
             print("Turning angle {}".format(ang))
-            time_t = time_to_turn(ang, 16)
-            update_motors(16, -16)
+            time_t = time_to_turn(abs(ang), 16)
+            if ang < 0:
+                update_motors(-18, 18)
+            else:
+                update_motors(18,-18)
             time.sleep(time_t)
-            update_motors(16, 16)
+            update_motors(18, 18)
             time.sleep(time_f)
         else:
             print("Turning")
@@ -423,10 +430,8 @@ while True:
 
     elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
-        print("TURNING")
-        update_motors(5, -5)
-        time.sleep(1)
-        update_motors(16,16)
+        print("BOUNCE")
+        update_motors(18,18)
 
     elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
