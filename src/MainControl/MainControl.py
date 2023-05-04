@@ -366,10 +366,6 @@ def update_motors(left_new_speed, right_new_speed):
 #              END SERVO SETUP
 ################################################  
 
-# Chase variables
-chasing = False
-chasing_time = 0
-
 control_current_state = "black"
 
 # Characterizations
@@ -395,12 +391,12 @@ while True:
         time.sleep(.5)
         state_color = get_color()
 
-    if state_color == "red" and state_color != control_current_state and chasing == False:
+    if state_color == "red" and state_color != control_current_state:
         control_current_state = state_color
         print("STOPPING")
         update_motors(0, 0)
 
-    elif state_color == "yellow" or state_color == "green" and state_color != control_current_state and chasing == False:
+    elif state_color == "yellow" or state_color == "green" and state_color != control_current_state:
         control_current_state = state_color
         print("STARTING")
         update_motors(0,0)
@@ -431,15 +427,7 @@ while True:
         time.sleep(1)
         update_motors(16,16)
 
-    elif state_color == "white" and state_color != control_current_state and chasing == False:
-        control_current_state = state_color
-        print("Turning Left")
-        v1 = left_motor_speed
-        v2 = turn_at_radius(15, v1)
-        print("Turning Wheel Speeds: Left ({}) Right ({})".format(v1, v2))
-        update_motors(v1, v2)
-
-    elif state_color == "black" and state_color != control_current_state and chasing == False:
+    elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
         print("stopping everything safely")
         break
