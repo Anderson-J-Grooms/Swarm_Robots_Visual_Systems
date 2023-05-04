@@ -15,7 +15,7 @@ def colorCheck(h,s,v) :
 
     # Command 6 - seeing yellow
     if (h >= 30 and h < 60):
-        return "yellow"
+        return "green"
 
     # Command 5 - seeing green
     if (h >= 60 and h < 100):
