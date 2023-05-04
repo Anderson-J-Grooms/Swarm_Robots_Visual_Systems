@@ -433,7 +433,7 @@ while True:
         time.sleep(1)
         update_motors(16,16)
 
-    elif state_color == "magenta" and state_color != control_current_state and not chase:
+    elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
         update_motors(5, -5)
@@ -444,6 +444,7 @@ while True:
         print("This probably shouldn't happen...")
         print("stopping everything safely")
         break
+
     if chase:
         if time.time() - ts >= th:
             chase = False
