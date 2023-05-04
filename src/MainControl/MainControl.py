@@ -376,6 +376,7 @@ control_current_state = "black"
 UART.setup("UART1")
 
 ser = serial.Serial(port = "/dev/ttyO1", baudrate=115200) #9600 is baudrate for PI 115200 is for beaglebone
+
 # Main control loop
 while True:
 
@@ -396,7 +397,7 @@ while True:
         print("STOPPING")
         update_motors(0, 0)
 
-    elif state_color == "yellow" or state_color == "green" and state_color != control_current_state:
+    elif (state_color == "yellow" or state_color == "green") and state_color != control_current_state:
         control_current_state = state_color
         print("STARTING")
         update_motors(0,0)
