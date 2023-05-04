@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     vector<Point3f> objectPoints;
     vector<Point2f> imagePoints;
     Mat reversedImagePoints;
-    string color;
+    int color;
     string line;
     // stringstream call_line;
     string call_line = "stty -F /dev/ttyAMA0 115200";
@@ -185,16 +185,16 @@ int main(int argc, char **argv)
                 break;
             }
             findSquares(image, squares, 0);
-            color = "purple";
+            color = 0; //purple
             if (squares.size() == 0)
             {
                 findSquares(image, squares, 1);
-                color = "green";
+                color = 1; //green
             }
             if (squares.size() == 0)
             {
                 findSquares(image, squares, 2);
-                color = "yellow";
+                color = 2; //yellow
             }
             if (squares.size() != 0)
             {
@@ -235,7 +235,7 @@ int main(int argc, char **argv)
                     string pd = to_string(distance);
                     string pa0 = to_string(theta0 * 180 / CV_PI);
                     string pa1 = to_string(theta1 * 180 / CV_PI);
-                    string pc = color;
+                    string pc = to_string(color);
                     string num = to_string(1);
                     string call_line = "echo \"" + num + "," + pd + "," + pa0 + "," + pa1 + "," + pc + "\" > /dev/ttyAMA0";
                     // call_line << "echo \"" << pd << "\n\" > /dev/ttyAMA0" << endl;
