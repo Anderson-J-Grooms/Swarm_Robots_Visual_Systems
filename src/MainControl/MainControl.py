@@ -435,11 +435,8 @@ while True:
 
     elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
-        chase = False
-        print("MURNING")
-        update_motors(6, -6)
-        time.sleep(1)
-        update_motors(18,18)
+        print("Starting")
+        update_motors(16, 16)
 
     elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
