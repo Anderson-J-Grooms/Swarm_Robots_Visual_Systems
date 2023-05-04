@@ -320,16 +320,16 @@ while True:
         time.sleep(.5)
         state_color = get_color()
 
-    if state_color == "red" and state_color != control_current_state and chasing == False:
+    if state_color == "red" and state_color != control_current_state:
         control_current_state = state_color
         print("STOPPING")
         update_motors(0, 0)
 
-    elif state_color == "yellow" or state_color == "green" and state_color != control_current_state and chasing == False:
+    elif state_color == "yellow" or state_color == "green" and state_color != control_current_state:
         print("Starting")
         update_motors(10, 10)
 
-    elif state_color == "blue" and state_color != control_current_state and chasing == False:
+    elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
         update_motors(5,-5)
@@ -343,7 +343,7 @@ while True:
         time.sleep(1)
         update_motors(10,10)
 
-    elif state_color == "black" and state_color != control_current_state and chasing == False:
+    elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
         print("stopping everything safely")
         break

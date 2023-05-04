@@ -7,6 +7,7 @@ import serial
 from time import sleep
 import rcpy.servo as servo
 import rcpy.gpio as gpio
+from rcpy.gpio import InputEvent
 
 from rcpy.servo import servo8 as leftServo
 from rcpy.servo import servo1 as rightServo
@@ -224,12 +225,102 @@ calibrate_light()
 #            END RGB SENSOR SETUP
 ################################################
 
+
+################################################
+#                  ENCODER SETUP
+################################################ 
+
 # Set up GPIO pins and configure Wheel Encoders
 left_encoder_pin = 25
 right_encoder_pin = 17
 encoder_chip = 1
 left_encoder = gpio.Input(encoder_chip, left_encoder_pin)
 right_encoder = gpio.Input(encoder_chip, right_encoder_pin)
+
+# Time variables
+left_tPrev = time.time()
+left_tNow = left_tPrev
+right_tPrev = time.time()
+right_tNow = left_tPrev
+
+# Error variables
+left_prev_error = 0
+left_curr_error = 0
+left_integral_error = 0
+left_derivative_error = 0
+
+right_prev_error = 0
+right_curr_error = 0
+right_integral_error = 0
+right_derivative_error = 0
+
+# State variables
+if left_encoder.get() == gpio.HIGH:
+    left_start_state = InputEvent.HIGH
+else:
+    left_start_state = InputEvent.LOW
+
+if right_encoder.get() == gpio.HIGH:
+    right_start_state = InputEvent.HIGH
+else:
+    right_start_state = InputEvent.LOW
+
+def l_encoder_action(input, event):
+    global left_tPrev, left_tNow
+    global left_prev_error, left_curr_error, left_integral_error, left_derivative_error  
+    global left_motor_setting
+
+    # If the wheel has spun two states then we know the distance
+    if event  == left_start_state:
+        # Update time
+        left_tPrev = left_tNow
+        left_tNow = time.time()
+            
+        # Calculate Speed and error
+        speed = calculate_speed(left_tPrev, left_tNow)
+        left_prev_error = left_curr_error
+        left_curr_error = calculate_error(speed, left_motor_speed)
+        left_integral_error = calculate_ierror(left_integral_error, left_curr_error, left_tPrev, left_tNow)
+        left_derivative_error = calculate_derror(left_curr_error, left_prev_error, left_tPrev, left_tNow)
+        print("Left Speed: {}, Left Setting: {}, Left Error: {}, Left Ierror: {} Left Derror: {}".format(speed, left_motor_setting, left_curr_error, left_integral_error, left_derivative_error))
+        # Control
+        left_motor_setting = pid_control(0.5, 1, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+        #left_motor_setting = pid_control(0.8833, 1.408, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+        #left_motor_setting = pid_control(.1, .2, .01, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
+        leftServo.set(left_motor_setting)
+
+def r_encoder_action(input, event):
+    global right_tPrev, right_tNow
+    global right_prev_error, right_curr_error, right_integral_error, right_derivative_error  
+    global right_motor_setting
+
+    if event == right_start_state:
+        right_tPrev = right_tNow
+        right_tNow = time.time()
+            
+        speed = calculate_speed(right_tPrev, right_tNow)
+        left_prev_error = left_curr_error
+        right_curr_error = calculate_error(speed, right_motor_speed)
+        right_integral_error = calculate_ierror(right_integral_error, right_curr_error, right_tPrev, right_tNow)
+        right_derivative_error = calculate_derror(right_curr_error, right_prev_error, right_tPrev, right_tNow)
+        print("Right Speed: {}, Right Setting: {}, Right Error: {}, Right Ierror: {} Right Derror: {}".format(speed, right_motor_setting, right_curr_error, right_integral_error, right_derivative_error))
+            
+        right_motor_setting = pid_control(0.5, 1, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+        #right_motor_setting = pid_control(0.8833, 1.408, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+        #right_motor_setting = pid_control(.1, .2, .01, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
+        rightServo.set(right_motor_setting)
+
+   
+
+l_encoder_event = InputEvent(left_encoder, InputEvent.LOW | InputEvent.HIGH, target = l_encoder_action)
+r_encoder_event = InputEvent(right_encoder, InputEvent.LOW | InputEvent.HIGH, target = r_encoder_action)
+
+l_encoder_event.start()
+r_encoder_event.start()
+
+################################################
+#                  END ENCODER SETUP
+################################################
 
 ################################################
 #                  SERVO SETUP
@@ -273,36 +364,13 @@ def update_motors(left_new_speed, right_new_speed):
 
 ################################################
 #              END SERVO SETUP
-################################################   
-
-# Time variables
-left_tPrev = time.time()
-left_tNow = left_tPrev
-right_tPrev = time.time()
-right_tNow = left_tPrev
-
-# State variables
-left_start_state = left_encoder.get()
-left_state = left_start_state
-right_start_state = right_encoder.get()
-right_state = right_start_state
-control_current_state = "black"
-
-# Error variables
-left_prev_error = 0
-left_curr_error = 0
-left_integral_error = 0
-left_derivative_error = 0
-
-right_prev_error = 0
-right_curr_error = 0
-right_integral_error = 0
-right_derivative_error = 0
+################################################  
 
 # Chase variables
 chasing = False
 chasing_time = 0
 
+control_current_state = "black"
 
 # Characterizations
 # Right max Speed: 20.9995597347149 cm / s
@@ -317,7 +385,7 @@ while True:
 
     data = ser.readline()
     cameraData = data.decode('utf-8').split(',')
-#    print(cameraData)
+    #print(cameraData)
 
     # Take a color reading and decide if we are changing states
     state_color = get_color()
@@ -377,52 +445,6 @@ while True:
         break
 
     #print("Current Color Reading: {}, Current Color State: {}".format(state_color, control_current_state))
-
-    # Get Readings from encoders for comparison
-    left_reading = left_encoder.get()
-    right_reading = right_encoder.get()
-
-    # Check if the wheel has spun
-    if left_state != left_reading:
-        left_state = left_reading
-        # If the wheel has spun two states then we know the distance
-        if left_state == left_start_state:
-            # Update time
-            left_tPrev = left_tNow
-            left_tNow = time.time()
-            
-            # Calculate Speed and error
-            speed = calculate_speed(left_tPrev, left_tNow)
-            left_prev_error = left_curr_error
-            left_curr_error = calculate_error(speed, left_motor_speed)
-            left_integral_error = calculate_ierror(left_integral_error, left_curr_error, left_tPrev, left_tNow)
-            left_derivative_error = calculate_derror(left_curr_error, left_prev_error, left_tPrev, left_tNow)
-            print("Left Speed: {}, Left Setting: {}, Left Error: {}, Left Ierror: {} Left Derror: {}".format(speed, left_motor_setting, left_curr_error, left_integral_error, left_derivative_error))
-            # Control
-            left_motor_setting = pid_control(0.5, 1, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
-            #left_motor_setting = pid_control(0.8833, 1.408, 0.006443, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
-            #left_motor_setting = pid_control(.1, .2, .01, left_curr_error, left_integral_error, left_derivative_error, left_motor_setting, 21.924028091423587, 0)
-            leftServo.set(left_motor_setting)
-
-    if right_state != right_reading:
-        right_state = right_reading
-        if right_state == right_start_state:
-            right_tPrev = right_tNow
-            right_tNow = time.time()
-            
-            speed = calculate_speed(right_tPrev, right_tNow)
-            left_prev_error = left_curr_error
-            right_curr_error = calculate_error(speed, right_motor_speed)
-            right_integral_error = calculate_ierror(right_integral_error, right_curr_error, right_tPrev, right_tNow)
-            right_derivative_error = calculate_derror(right_curr_error, right_prev_error, right_tPrev, right_tNow)
-            print("Right Speed: {}, Right Setting: {}, Right Error: {}, Right Ierror: {} Right Derror: {}".format(speed, right_motor_setting, right_curr_error, right_integral_error, right_derivative_error))
-            
-            right_motor_setting = pid_control(0.5, 1, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
-            #right_motor_setting = pid_control(0.8833, 1.408, 0.006443, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
-            #right_motor_setting = pid_control(.1, .2, .01, right_curr_error, right_integral_error, right_derivative_error, right_motor_setting, -20.9995597347149, 1)
-            rightServo.set(right_motor_setting)
-
-
 
 clk0.stop()
 clk1.stop()
