@@ -336,6 +336,8 @@ while True:
         update_motors(5,-5)
         time.sleep(1)
         update_motors(16,16)
+        time.sleep(1)
+
 
     elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
