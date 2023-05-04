@@ -209,9 +209,9 @@ def get_color():
     elif cmax == r:
         h = (60.0 * ((g-b) / diff) + 360) % 360
     elif cmax == g:
-        h = (60.0 * ((g-b) / diff) + 120) % 360
+        h = (60.0 * ((b-r) / diff) + 120) % 360
     elif cmax == b:
-        h = (60.0 * ((g-b) / diff) + 240) % 360
+        h = (60.0 * ((r-g) / diff) + 240) % 360
     if cmax == 0:
         s = 0
     else:
