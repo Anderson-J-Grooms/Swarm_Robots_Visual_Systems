@@ -393,9 +393,9 @@ while True:
     # Take a color reading and decide if we are changing states
     state_color = get_color()
     if state_color != control_current_state:
+        time.sleep(0.25)
         print("STATE CHANGE: {}".format(state_color))
         update_motors(0, 0)
-        time.sleep(.5)
         state_color = get_color()
 
     if state_color == "red" and state_color != control_current_state and not chase:

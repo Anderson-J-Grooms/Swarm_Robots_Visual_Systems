@@ -315,9 +315,9 @@ while True:
     # Take a color reading and decide if we are changing states
     state_color = get_color()
     if state_color != control_current_state:
+        time.sleep(0.25)
         print("STATE CHANGE: {}".format(state_color))
         update_motors(0, 0)
-        time.sleep(.5)
         state_color = get_color()
 
     if state_color == "red" and state_color != control_current_state:
@@ -326,22 +326,23 @@ while True:
         update_motors(0, 0)
 
     elif state_color == "yellow" or state_color == "green" and state_color != control_current_state:
+        control_current_state = state_color
         print("Starting")
-        update_motors(10, 10)
+        update_motors(16, 16)
 
     elif state_color == "blue" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
         update_motors(5,-5)
         time.sleep(1)
-        update_motors(10,10)
+        update_motors(16,16)
 
     elif state_color == "magenta" and state_color != control_current_state:
         control_current_state = state_color
         print("TURNING")
-        update_motors(5, -5)
+        update_motors(5,-5)
         time.sleep(1)
-        update_motors(10,10)
+        update_motors(16,16)
 
     elif state_color == "black" and state_color != control_current_state:
         print("This probably shouldn't happen...")
