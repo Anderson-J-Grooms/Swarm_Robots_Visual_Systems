@@ -176,67 +176,66 @@ int main(int argc, char **argv)
         if (c % 100)
         {
             c = 0;
-            // wait for a new frame from camera and store it into 'frame'
-            cap.read(image);
-            // check if we succeeded
-            if (image.empty())
-            {
-                cerr << "ERROR! blank frame grabbed\n";
-                break;
-            }
-            findSquares(image, squares, 0);
-            color = 0; //purple
-            if (squares.size() == 0)
-            {
-                findSquares(image, squares, 1);
-                color = 1; //green
-            }
-            if (squares.size() == 0)
-            {
-                findSquares(image, squares, 2);
-                color = 2; //yellow
-            }
-            if (squares.size() != 0)
-            {
-                for (int i = 0; i < 1; i++)
-                {
-                    imagePoints.clear();
-                    polylines(image, squares[i], true, Scalar(0, 255, 0), 3, LINE_AA);
-                    for (int j = 0; j < 4; j++)
-                    {
-                        circle(image, squares[i][j], 1, Scalar(255, 0, 0), -1);
-                        imagePoints.push_back(squares[i][j]);
-                    }
-                    sort(imagePoints.begin(), imagePoints.end(), [](const Point2f &a, const Point2f &b)
-                         { return (a.x < b.x); });
+			// wait for a new frame from camera and store it into 'frame'
+			cap.read(image);
+			// check if we succeeded
+			if (image.empty()) {
+				cerr << "ERROR! blank frame grabbed\n";
+				break;
+			}
+			findSquares(image, squares, 0);
+			color = 0; //purple
+			if (squares.size() == 0) {
+				findSquares(image, squares, 1);
+				color = 1; //green
+			}
+			if (squares.size() == 0) {
+				findSquares(image, squares, 2);
+				color = 2; //yellow
+			}
+			if (squares.size() != 0) {
+				for( int i = 0; i < 1; i++)
+				{
+					imagePoints.clear();
+					polylines(image, squares[i], true, Scalar(0, 255, 0), 3, LINE_AA);
+					for( int j = 0; j < 4; j++)
+					{
+						circle(image, squares[i][j], 1, Scalar(255,0,0), -1);
+						imagePoints.push_back(squares[i][j]);
+					}
+					sort(imagePoints.begin(), imagePoints.end(), [](const Point2f &a,const Point2f &b) {
+						return (a.x < b.x );
+						});
+						
+					sort(imagePoints.begin(), imagePoints.begin() + 2, [](const Point2f &a,const Point2f &b) {
+						return (a.y < b.y );
+						});
+					sort(imagePoints.begin() + 2 , imagePoints.end(), [](const Point2f &a,const Point2f &b) {
+						return (a.y < b.y );
+						});
+					solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
+					double distance = norm(tvec);
+					projectPoints(objectPoints, rvec, tvec, cameraMatrix,distCoeffs,reversedImagePoints);
+					double theta0 = atan(tvec.at<double>(0,0) / tvec.at<double>(0,2));
+				  //  double theta1 = norm(rvec);
+					Mat rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz;
+					Rodrigues(rvec, rotation_matrix);
+					RQDecomp3x3(rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz);
+					double theta1 = asin(Qy.at<double>(0,2));
 
-                    sort(imagePoints.begin(), imagePoints.begin() + 2, [](const Point2f &a, const Point2f &b)
-                         { return (a.y < b.y); });
-                    sort(imagePoints.begin() + 2, imagePoints.end(), [](const Point2f &a, const Point2f &b)
-                         { return (a.y < b.y); });
-                    solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
-                    double distance = norm(tvec);
-                    projectPoints(objectPoints, rvec, tvec, cameraMatrix, distCoeffs, reversedImagePoints);
-                    double theta0 = atan(tvec.at<double>(0, 0) / tvec.at<double>(0, 2));
-                    //  double theta1 = norm(rvec);
-                    Mat rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz;
-                    Rodrigues(rvec, rotation_matrix);
-                    RQDecomp3x3(rotation_matrix, mtxR, mtxQ, Qx, Qy, Qz);
-                    double theta1 = asin(Qy.at<double>(0, 2));
-
-                    // double roll, pitch, yaw;
-                    // roll = atan2(rotation_matrix.at<double>(2,1), rotation_matrix.at<double>(2,2));
-                    // pitch = atan2(-rotation_matrix.at<double>(2,0), sqrt(pow(rotation_matrix.at<double>(2,1),2) + pow(rotation_matrix.at<double>(2,2),2)));
-                    // yaw = atan2(rotation_matrix.at<double>(1,0), rotation_matrix.at<double>(0,0));
-                    cout << "distance" << distance << endl;
-                    cout << "angle 0: " << theta0 * 180 / CV_PI << endl;
-                    cout << "angle 1: " << theta1 * 180 / CV_PI << endl;
-                    cout << "color: " << color << endl;
-                    string pd = to_string(distance);
-                    string pa0 = to_string(theta0 * 180 / CV_PI);
-                    string pa1 = to_string(theta1 * 180 / CV_PI);
-                    string pc = to_string(color);
-                    string num = to_string(1);
+					//double roll, pitch, yaw;
+					//roll = atan2(rotation_matrix.at<double>(2,1), rotation_matrix.at<double>(2,2));
+					//pitch = atan2(-rotation_matrix.at<double>(2,0), sqrt(pow(rotation_matrix.at<double>(2,1),2) + pow(rotation_matrix.at<double>(2,2),2)));
+					//yaw = atan2(rotation_matrix.at<double>(1,0), rotation_matrix.at<double>(0,0));
+					cout << "distance" << distance << endl;
+					cout << "angle 0: " << theta0  * 180 / CV_PI << endl;
+					cout << "angle 1: " << theta1 * 180 / CV_PI << endl;
+					cout << "color: " << color << endl;
+					string pd = to_string(distance);
+					string pa0 =  to_string(theta0 * 180 / CV_PI);
+					string pa1 =  to_string(theta1 * 180 / CV_PI);
+					string pc = to_string(color);
+					string num = to_string(1);
                     string call_line = "echo \"" + num + "," + pd + "," + pa0 + "," + pa1 + "," + pc + "\" > /dev/ttyAMA0";
                     // call_line << "echo \"" << pd << "\n\" > /dev/ttyAMA0" << endl;
                     system(call_line.c_str());
